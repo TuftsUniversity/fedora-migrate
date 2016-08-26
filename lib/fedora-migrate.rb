@@ -1,6 +1,7 @@
 require "fedora_migrate/version"
 require "active_support"
 require "active_fedora"
+require "curation_concerns"
 require "hydra/head"
 require "rubydora"
 
@@ -9,7 +10,6 @@ Dir[File.expand_path(File.join(File.dirname(__FILE__), "tasks/*.rake"))].each { 
 
 module FedoraMigrate
   extend ActiveSupport::Autoload
-
   autoload :ContentMover
   autoload :DatastreamMover
   autoload :DatastreamVerification
@@ -31,7 +31,9 @@ module FedoraMigrate
   autoload :RightsMetadata
   autoload :RubydoraConnection
   autoload :TargetConstructor
+  autoload :VotingRecordTargetConstructor
   autoload :TripleConverter
+  #autoload :CurrationConcerns, 'curation'
 
   class << self
     attr_reader :fedora_config, :source

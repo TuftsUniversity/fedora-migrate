@@ -43,7 +43,8 @@ module FedoraMigrate
     end
 
     def source_objects
-      @source_objects ||= FedoraMigrate.source.connection.search(nil).collect { |o| qualifying_object(o) }.compact
+      @source_objects ||= [FedoraMigrate.source.connection.find('tufts:ky.clerkofthehouse.1813')].collect { |o| qualifying_object(o) }.compact
+      @source_objects
     end
 
     def failures
@@ -63,7 +64,7 @@ module FedoraMigrate
       end
 
       def migrate_relationship
-        result.relationships = FedoraMigrate::RelsExtDatastreamMover.new(source).migrate
+       # result.relationships = FedoraMigrate::RelsExtDatastreamMover.new(source).migrate
         result.status = true
       rescue StandardError => e
         result.relationships = e.inspect
@@ -77,8 +78,10 @@ module FedoraMigrate
       end
 
       def qualifying_object(object)
-        name = object.pid.split(/:/).first
-        return object if name.match(namespace)
+        # TODO just moving an election record for now
+        return object if object.pid == "tufts:ky.clerkofthehouse.1813"
+        # name = object.pid.split(/:/).first
+        # return object if name.match(namespace)
       end
 
       def migration_required?

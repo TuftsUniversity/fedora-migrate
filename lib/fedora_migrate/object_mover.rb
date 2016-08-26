@@ -38,7 +38,15 @@ module FedoraMigrate
     end
 
     def target
-      @target ||= FedoraMigrate::TargetConstructor.new(source).build
+      #puts @options[:target_constructor]
+
+      if @options[:target_constructor] == 'Elections'
+        @target ||= FedoraMigrate::VotingRecordTargetConstructor.new(source).build
+      else
+        @target ||= FedoraMigrate::TargetConstructor.new(source).build
+      end
+
+      @target
     end
 
     private

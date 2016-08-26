@@ -25,7 +25,7 @@ module FedoraMigrate
     end
 
     def save
-      raise FedoraMigrate::Errors::MigrationError, "Failed to save target: #{target_errors}" unless target.save
+      raise FedoraMigrate::Errors::MigrationError, "Failed to save target: #{target_errors}" unless target.save!
     end
 
     def target_errors
