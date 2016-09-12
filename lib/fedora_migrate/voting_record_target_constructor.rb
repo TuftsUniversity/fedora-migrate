@@ -5,7 +5,7 @@ require 'curation_concerns'
 module FedoraMigrate
   class VotingRecordTargetConstructor
     attr_accessor :source, :candidates, :target
-
+    DEPOSITOR_UTLN = 'mkorcy01'.freeze
     def initialize(source)
       @source = source
     end
@@ -16,33 +16,37 @@ module FedoraMigrate
     def build
       raise FedoraMigrate::Errors::MigrationError, "No qualified targets found in #{source.pid}" if target.nil?
       obj = target.new
-      obj.apply_depositor_metadata "ebeck01"
+      obj.apply_depositor_metadata DEPOSITOR_UTLN
 
       file_set = FileSet.new
-      file_set.apply_depositor_metadata "ebeck01"
+      file_set.apply_depositor_metadata DEPOSITOR_UTLN
+      #
+      file_set.human_readable_type = 'VotingRecord'
 
-      voting_record = File.new "record.xml", "w" #File.basename(uri.path)
+      voting_record = File.new 'record.xml', 'w' #File.basename(uri.path)
       voting_record.write source.datastreams['RECORD-XML'].content
       voting_record
-      voting_record = File.new "record.xml"
+      voting_record = File.new 'record.xml'
 
-      #fcrepo3_set = Fcrepo3FileSet.new
-      ##fcrepo3_set.apply_depositor_metadata "mkorcy01"
-      #fcrepo3_set.title = ['Fedora 3 Datastreams']
-      #fcrepo3_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE
-      #fcrepo3_set.thumbnail_id = nil
+      ##fcrepo3_set = Fcrepo3FileSet.new
+      ##fcrepo3_set.apply_depositor_metadata DEPOSITOR_UTLN
+      ##fcrepo3_set.title = ['Fedora 3 Datastreams']
+      ##fcrepo3_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE
+     # fcrepo3_set.thumbnail_id = nil
 
-      #user = User.find_by_user_key(fcrepo3_set.depositor)
-      #ds_actor = CurationConcerns::Actors::FileSetActor.new(fcrepo3_set, user)
+      ##user = User.find_by_user_key(fcrepo3_set.depositor)
+      ##ds_actor = CurationConcerns::Actors::FileSetActor.new(fcrepo3_set, user)
 
-    #  ['RELS-EXT','DC','DCA-ADMIN','DCA-META','DC-DETAIL-META'].each do |ds|
-    ##    next if source.datastreams[ds].content.nil?
-#        File.open(ds+".xml", 'w') {|f| f.write(source.datastreams[ds].content) }
+      # Have DC go first so there's always an 'original' ds
+      ##['DC','RELS-EXT','DCA-ADMIN','DCA-META','DC-DETAIL-META'].each_with_index do |ds, i|
+      ##  next if source.datastreams[ds].content.nil?
+      ##  File.open(ds+'.xml', 'w') {|f| f.write(source.datastreams[ds].content) }
+      ##  ds_file = File.open(ds+'.xml','r:UTF-8')
+      ##  ds_actor.create_metadata(obj, {visibility: Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE})
+      ##  key = ds.downcase.gsub('-','_')
 
-#        ds_file = File.open(ds+".xml",'r:UTF-8')
- #       ds_actor.create_metadata(obj, {visibility: Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE})
-  #      ds_actor.create_content(File.open(ds_file),'fcrepo3stream')
-   #   end
+      ##  ds_actor.create_content(File.open(ds_file),key)
+      ##end
 
       file_set.title = [source.datastreams['RECORD-XML'].label]
       file_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
