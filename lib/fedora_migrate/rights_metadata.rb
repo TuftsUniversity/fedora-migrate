@@ -2,8 +2,9 @@ require 'active_support/core_ext/string'
 
 module FedoraMigrate
   # Implements Hydra RightsMetadata XML terminology for asserting access permissions
-  class RightsMetadata < ActiveFedora::OmDatastream
-    extend Deprecation
+  class RightsMetadata
+    include OM::XML::Document
+    include OM::XML::TerminologyBasedSolrizer
 
     set_terminology do |t|
       t.root(path: "rightsMetadata", xmlns: "http://hydra-collab.stanford.edu/schemas/rightsMetadata/v1", schema: "http://github.com/projecthydra/schemas/tree/v1/rightsMetadata.xsd")

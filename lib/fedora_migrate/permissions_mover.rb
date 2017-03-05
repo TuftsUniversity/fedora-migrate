@@ -20,7 +20,7 @@ module FedoraMigrate
     private
 
       def datastream_from_content(ds = FedoraMigrate::RightsMetadata.new)
-        ds.ng_xml = source.content
+        ds.ng_xml = Nokogiri::XML(source.content.body)
         ds
       end
   end
