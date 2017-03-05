@@ -16,3 +16,4 @@ jetty
 .ruby-version
 .rvmrc
 migration_report
+.idea/
