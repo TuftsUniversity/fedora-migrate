@@ -5,7 +5,7 @@ module FedoraMigrate
     DEFAULT_PATH = "migration_report".freeze
 
     def initialize(path = nil)
-      @path = path.nil? ? DEFAULT_PATH : path
+      @path =  File.join(DEFAULT_PATH,path)
       FileUtils.mkdir_p(@path)
       reload
     end
