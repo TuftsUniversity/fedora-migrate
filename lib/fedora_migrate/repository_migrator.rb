@@ -9,7 +9,7 @@ module FedoraMigrate
     def initialize(namespace = nil, options = {})
       @namespace = namespace || repository_namespace
       @options = options
-      @report = MigrationReport.new(@options.fetch(:report, nil))
+      @report = MigrationReport.new(@options[:target_constructor])
       conversion_options
     end
 
@@ -43,7 +43,21 @@ module FedoraMigrate
     end
 
     def source_objects
-      @source_objects ||= [FedoraMigrate.source.connection.find('tufts:ky.clerkofthehouse.1813')].collect { |o| qualifying_object(o) }.compact
+      objs = []
+      pids = File.open("#{options[:target_constructor]}_to_migrate.txt").read
+      pids.each_line do |pid|
+
+        begin
+          pid = pid.squish
+          puts "Get #{pid}"
+          objs << FedoraMigrate.source.connection.find(pid)
+        rescue Rubydora::FedoraInvalidRequest => e
+          puts "Skipping #{pid}"
+        end
+      end
+
+      @source_objects ||= objs.collect { |o| qualifying_object(o) }.compact
+     # byebug
       @source_objects
     end
 
@@ -54,6 +68,7 @@ module FedoraMigrate
     private
 
       def migrate_object
+        #byebug
         result.object = FedoraMigrate::ObjectMover.new(source, nil, options).migrate
         result.status = true
       rescue StandardError => e
@@ -78,10 +93,8 @@ module FedoraMigrate
       end
 
       def qualifying_object(object)
-        # TODO just moving an election record for now
-        return object if object.pid == "tufts:ky.clerkofthehouse.1813"
-        # name = object.pid.split(/:/).first
-        # return object if name.match(namespace)
+        name = object.pid.split(/:/).first
+        return object if name.match(namespace)
       end
 
       def migration_required?
