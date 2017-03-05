@@ -30,8 +30,7 @@ module FedoraMigrate
   autoload :RepositoryMigrator
   autoload :RightsMetadata
   autoload :RubydoraConnection
-  autoload :TargetConstructor
-  autoload :VotingRecordTargetConstructor
+  autoload :TuftsTargetConstructor
   autoload :TripleConverter
   #autoload :CurrationConcerns, 'curation'
 
