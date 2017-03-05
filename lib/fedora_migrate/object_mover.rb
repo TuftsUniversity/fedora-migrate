@@ -8,7 +8,7 @@ module FedoraMigrate
 
     def migrate
       prepare_target
-      conversions.collect { |ds| convert_rdf_datastream(ds) }
+      #conversions.collect { |ds| convert_rdf_datastream(ds) }
       migrate_datastreams
       complete_target
       super
@@ -42,11 +42,28 @@ module FedoraMigrate
 
     def target
       #puts @options[:target_constructor]
-
-      if @options[:target_constructor] == 'Elections'
-        @target ||= FedoraMigrate::VotingRecordTargetConstructor.new(source).build
+      #byebug
+      if @options[:target_constructor] == 'elections'
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source,'RECORD-XML', nil, 'mkorcy01').build
+      elsif @options[:target_constructor] == 'eads'
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.xml', nil, 'mkorcy01').build
+      elsif @options[:target_constructor] == 'images'
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.tif', nil, 'mkorcy01').build
+      elsif @options[:target_constructor] == 'pdfs'
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.pdf', 'Transfer.binary', 'mkorcy01').build
+      elsif @options[:target_constructor] == 'teis'
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.xml', nil, 'mkorcy01').build
+      elsif @options[:target_constructor] == 'audio'
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'ARCHIVAL_WAV', 'ARCHIVAL_XML', 'mkorcy01').build
+      elsif @options[:target_constructor] == 'video'
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.video', 'ARCHIVAL_XML', 'mkorcy01').build
+      elsif @options[:target_constructor] == 'rcrs'
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'RCR-CONTENT', nil, 'mkorcy01').build
+      elsif @options[:target_constructor] == 'generics'
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'GENERIC-CONTENT', nil, 'mkorcy01').build
       else
-        @target ||= FedoraMigrate::TargetConstructor.new(source).build
+        puts "** UNKNOWN Target **"
+        exit
       end
 
       @target
