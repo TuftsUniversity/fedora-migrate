@@ -2,6 +2,7 @@ require 'open-uri'
 require 'uri'
 require 'curation_concerns'
 require 'tufts/vocab/tufts_terms'
+require 'rdf/fcrepo3'
 
 module FedoraMigrate
   class TuftsTargetConstructor
@@ -41,7 +42,11 @@ module FedoraMigrate
       # back up old data
       #create_and_add_fcrepo3_set obj
 
-      process_metadata obj
+      process_desc_metadata obj
+      process_admin_metadata obj
+      process_collection_metadata obj
+      process_relsext_metadata obj
+
       obj.save
 
       active_workflow = Sipity::Workflow.find(2)
@@ -52,7 +57,7 @@ module FedoraMigrate
       obj
     end
 
-    def create_and_add_payload(obj,payload_stream, depositor_utln)
+    def create_and_add_payload(obj, payload_stream, depositor_utln)
       # create fileset and apply depository metadata
 
       return if source.datastreams[payload_stream].content.nil?
@@ -90,7 +95,35 @@ module FedoraMigrate
 
     end
 
-    def process_metadata obj
+    def process_admin_metadata obj
+
+    end
+
+    def process_collection_metadata obj
+
+    end
+
+    def process_relsext_metadata obj
+
+      xml = Nokogiri::XML(source.datastreams["RELS-EXT"].content).remove_namespaces!
+
+      RDF::FCREPO3::RELSEXT.properties.each do |property|
+
+        val = property.value
+        short_code = val[val.index('#')+1..val.length]
+        field_values = xml.xpath("//#{short_code}")
+        target_values = Array.new
+
+        field_values.each do |field|
+          (target_values << field.values.first) unless field.nil?
+        end
+
+        obj.send("relsext_#{short_code}=", target_values) unless target_values.length == 0
+
+      end
+    end
+
+    def process_desc_metadata obj
       obj.title = process_metadata_field 'dc:title'
       obj.creator = process_metadata_field 'dc:creator'
       obj.contributor = process_metadata_field 'dc:contributor'
@@ -105,7 +138,7 @@ module FedoraMigrate
 
     def process_metadata_field field_name
       xml = Nokogiri::XML(source.datastreams["DCA-META"].content)
-      field_values =  xml.xpath("//#{field_name}")
+      field_values = xml.xpath("//#{field_name}")
       target_values = Array.new
       field_values.each do |field|
         (target_values << field.text) unless field.nil?
@@ -120,16 +153,16 @@ module FedoraMigrate
 
     private
 
-      def get_file_from_source(datastream)
-        uri = URI.parse(source.datastreams[datastream].location)
-        target_file = File.basename(uri.path)
+    def get_file_from_source(datastream)
+      uri = URI.parse(source.datastreams[datastream].location)
+      target_file = File.basename(uri.path)
 
-        voting_record = File.new target_file, 'wb'
-        voting_record.write source.datastreams[datastream].content.body
-        #byebug
-        File.new target_file
+      voting_record = File.new target_file, 'wb'
+      voting_record.write source.datastreams[datastream].content.body
+      #byebug
+      File.new target_file
 
-      end
+    end
 
     def get_generic_file_from_source(datastream)
       @doc = Nokogiri::XML(source.datastreams[datastream].content).remove_namespaces!
@@ -144,39 +177,39 @@ module FedoraMigrate
       File.new target_file
     end
 
-      def create_and_add_fcrepo3_set obj
-        %w{DC RELS-EXT DCA-ADMIN DCA-META DC-DETAIL-META}.each_with_index do |ds, i|
-          next if source.datastreams[ds].content.nil?
-          fcrepo3_set = FileSet.new
-          fcrepo3_set.apply_depositor_metadata @depositor_utln
-          fcrepo3_set.title = ['Fedora 3 Datastreams']
-          fcrepo3_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE
+    def create_and_add_fcrepo3_set obj
+      %w{DC RELS-EXT DCA-ADMIN DCA-META DC-DETAIL-META}.each_with_index do |ds, i|
+        next if source.datastreams[ds].content.nil?
+        fcrepo3_set = FileSet.new
+        fcrepo3_set.apply_depositor_metadata @depositor_utln
+        fcrepo3_set.title = ['Fedora 3 Datastreams']
+        fcrepo3_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE
 
-          # Have DC go first so there's always an 'original' ds
+        # Have DC go first so there's always an 'original' ds
 
-          user = User.find_by_user_key(fcrepo3_set.depositor)
-          ds_actor = CurationConcerns::Actors::FileSetActor.new(fcrepo3_set, user)
-          File.open(ds+'.xml', 'w') {|f| f.write(source.datastreams[ds].content) }
-          ds_file = File.open(ds+'.xml','r:UTF-8')
-          ds_actor.create_metadata(obj, {"visibility" => Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE})
-          ds_actor.create_content(File.open(ds_file))
-          fcrepo3_set.save
-        end
-
-
+        user = User.find_by_user_key(fcrepo3_set.depositor)
+        ds_actor = CurationConcerns::Actors::FileSetActor.new(fcrepo3_set, user)
+        File.open(ds+'.xml', 'w') { |f| f.write(source.datastreams[ds].content) }
+        ds_file = File.open(ds+'.xml', 'r:UTF-8')
+        ds_actor.create_metadata(obj, {"visibility" => Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE})
+        ds_actor.create_content(File.open(ds_file))
+        fcrepo3_set.save
       end
 
-      def determine_target
 
-        Array(candidates).map { |model| vet(model) }.compact.first
-      end
+    end
 
-      def vet(model)
-        FedoraMigrate::Mover.id_component(model).constantize
-      rescue NameError
-        Logger.debug "rejecting #{model} for target"
-        nil
-      end
+    def determine_target
+
+      Array(candidates).map { |model| vet(model) }.compact.first
+    end
+
+    def vet(model)
+      FedoraMigrate::Mover.id_component(model).constantize
+    rescue NameError
+      Logger.debug "rejecting #{model} for target"
+      nil
+    end
 
     def candidates
       @candidates = Array(source.models).map do |candidate|
@@ -185,11 +218,11 @@ module FedoraMigrate
         elsif candidate == "info:fedora/cm:Text.TEI"
           "TuftsTei"
         elsif candidate == "info:fedora/cm:VotingRecord"
-            "TuftsVotingRecord"
+          "TuftsVotingRecord"
         elsif candidate == "info:fedora/cm:Text.EAD"
-            "TuftsEad"
+          "TuftsEad"
         elsif candidate == "info:fedora/cm:Image.4DS"
-            "TuftsImage"
+          "TuftsImage"
         elsif candidate == "info:fedora/cm:Audio"
           "TuftsAudio"
         elsif candidate == "info:fedora/cm:Audio.OralHistory"
@@ -206,7 +239,6 @@ module FedoraMigrate
       end
     end
   end
-
 
 
 end
