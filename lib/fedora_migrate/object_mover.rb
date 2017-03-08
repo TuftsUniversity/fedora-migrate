@@ -73,7 +73,7 @@ module FedoraMigrate
 
     def migrate_datastreams
       migrate_content_datastreams
-      migrate_permissions
+  #    migrate_permissions
       migrate_dates
     end
 
