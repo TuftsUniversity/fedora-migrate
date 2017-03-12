@@ -96,11 +96,53 @@ module FedoraMigrate
     end
 
     def process_admin_metadata obj
+      field = process_metadata_field('date_submitted', 'DC-DETAIL-META', false)
+      obj.date_submitted = field unless field == ''
+
+      field = process_metadata_field('date_issued', 'DCA-META', false)
+      obj.date_issued = field unless field == ''
+
+      field = process_metadata_field('date_available', 'DCA-META', false)
+      obj.date_available = field unless field == ''
+
+      field = process_metadata_field('date_modified', 'DC-DETAIL-META', false)
+      obj.date_modified = field unless field == ''
+
+      field = process_metadata_field('license', 'DC-DETAIL-META', false)
+      obj.license = field unless field == ''
+
+      field = process_metadata_field('accrualPolicy', 'DC-DETAIL-META', false)
+      obj.accrual_policy = field unless field == ''
+
+      field = process_metadata_field('steward', 'DCA-ADMIN', false)
+      obj.steward = field unless field == ''
+
+      field = process_metadata_field('comment', 'DCA-ADMIN', false)
+      obj.internal_note =field unless field == ''
+
+      field = process_metadata_field('displays', 'DCA-ADMIN')
+      obj.displays_in = field unless field.empty?
+
+      #embargo
+      vis = process_metadata_field('visibility', 'DCA-ADMIN', false)
+      obj.visibility = vis unless vis == ''
+
+      field = process_metadata_field('batchID', 'DCA-ADMIN', false)
+      obj.batch_id = field unless field == ''
+
+      field = process_metadata_field('audience', 'DC-DETAIL-META', false)
+      obj.audience = field unless field == ''
+
+      field = process_metadata_field('dateAccepted', 'DC-DETAIL-META', false)
+      obj.date_accepted = field unless field == ''
+
+      field = process_metadata_field('dateCopyrighted', 'DC-DETAIL-META', false)
+      obj.date_copyrighted = field unless field == ''
 
     end
 
     def process_collection_metadata obj
-
+      # add to collection
     end
 
     def process_relsext_metadata obj
@@ -124,24 +166,114 @@ module FedoraMigrate
     end
 
     def process_desc_metadata obj
-      obj.title = process_metadata_field 'dc:title'
-      obj.creator = process_metadata_field 'dc:creator'
-      obj.contributor = process_metadata_field 'dc:contributor'
-      obj.description = process_metadata_field 'dc:description'
-      obj.publisher = process_metadata_field 'dc:publisher'
-      obj.source = process_metadata_field 'dc:source'
-      obj.language = process_metadata_field 'dc:language'
-      obj.legacy_pid = source.pid
+      val = source.pid
+      obj.legacy_pid = val unless val.nil?
 
+      val = process_metadata_field('title', 'DCA-META')
+      obj.title = val unless val.empty?
 
+      val = process_metadata_field('alternative', 'DC-DETAIL-META')
+      obj.alternative  = val unless val.empty?
+
+      val = process_metadata_field('creator', 'DCA-META')
+      obj.creator = val unless val.empty?
+
+      val = process_metadata_field('contributor', 'DCA-META')
+      obj.contributor = val unless val.empty?
+
+      val = process_metadata_field('description', 'DCA-META')
+      obj.description = val unless val.empty?
+
+      val = process_metadata_field('abstract', 'DC-DETAIL-META', false)
+      obj.abstract = val unless val.empty?
+
+      val = process_metadata_field('publisher', 'DCA-META')
+      obj.publisher = val unless val.empty?
+
+      val = process_metadata_field('source', 'DCA-META')
+      obj.source = val unless val.empty?
+
+      val = process_metadata_field('date', 'DC-DETAIL-META')
+      obj.date = val unless val.empty?
+
+      val = process_metadata_field('language', 'DCA-META')
+      obj.language = val unless val.empty?
+
+      val = process_metadata_field('persname', 'DCA-META')
+      obj.personal_name = val unless val.empty?
+
+      val = process_metadata_field('corpname', 'DCA-META')
+      obj.corporate_name = val unless val.empty?
+
+      val = process_metadata_field('corpname', 'DCA-META')
+      obj.corporate_name = val unless val.empty?
+
+      val = process_metadata_field('geogname', 'DCA-META')
+      obj.complex_subject = val unless val.empty?
+
+      val = process_metadata_field('subject', 'DCA-META')
+      obj.subject = val unless val.empty?
+
+      val = process_metadata_field('genre', 'DCA-DETAIL-META')
+      obj.genre = val unless val.empty?
+
+      val = process_metadata_field('spatial', 'DCA-DETAIL-META')
+      obj.spatial = val unless val.empty?
+
+      val = process_metadata_field('bibliographic_citation', 'DCA-META')
+      obj.bibliographic_citation = val unless val.empty?
+
+      val = process_metadata_field('temporal', 'DCA-META')
+      obj.temporal = val unless val.empty?
+
+      val = process_metadata_field('identifier', 'DCA-META', false)
+      obj.purl = val unless val.empty?
+
+      val = process_metadata_field('references', 'DCA-DETAIL-META')
+      obj.references = val unless val.empty?
+
+      val = process_metadata_field('replaces', 'DCA-DETAIL-META')
+      obj.replaces = val unless val.empty?
+
+      val = process_metadata_field('toc', 'DCA-DETAIL-META')
+      obj.table_of_contents = val unless val.empty?
+
+      val = process_metadata_field('isReplacedBy', 'DCA-DETAIL-META')
+      obj.is_replaced_by = val unless val.empty?
+
+      val = process_metadata_field('extent', 'DCA-META')
+      obj.extent = val unless val.empty?
+
+      val = process_metadata_field('provenance', 'DCA-DETAIL-META')
+      obj.provenance = val unless val.empty?
+
+      val = process_metadata_field('rightsHolder', 'DCA-DETAIL-META')
+      obj.rights_holder = val unless val.empty?
+
+      val = process_metadata_field('funder', 'DCA-DETAIL-META')
+      obj.funder = val unless val.empty?
+
+      val = process_metadata_field('rights', 'DCA-META')
+      obj.edm_rights = val unless val.empty?
+
+      val  = process_metadata_field('type', 'DCA-META')
+      obj.dc_type = val unless val.empty?
     end
 
-    def process_metadata_field field_name
-      xml = Nokogiri::XML(source.datastreams["DCA-META"].content)
+    def process_metadata_field(field_name,datastream_name,multiple=true)
+      xml = Nokogiri::XML(source.datastreams[datastream_name].content).remove_namespaces!
       field_values = xml.xpath("//#{field_name}")
-      target_values = Array.new
-      field_values.each do |field|
-        (target_values << field.text) unless field.nil?
+      if multiple
+        target_values = Array.new
+        field_values.each do |field|
+          (target_values << field.text) unless field.nil?
+        end
+      else
+        unless field_values.empty?
+          target_values = field_values.first.text
+        else
+          target_values = ''
+        end
       end
 
       target_values
