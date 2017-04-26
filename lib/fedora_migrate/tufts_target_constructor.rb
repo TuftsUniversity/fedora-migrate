@@ -44,10 +44,12 @@ module FedoraMigrate
 
       process_desc_metadata obj
       process_admin_metadata obj
-      process_collection_metadata obj
+      process_technical_metadata obj
       process_relsext_metadata obj
 
       obj.save
+
+      process_collection_metadata obj
 
       active_workflow = Sipity::Workflow.find(2)
       Sipity::Entity.create!(proxy_for_global_id: obj.to_global_id.to_s,
@@ -95,16 +97,23 @@ module FedoraMigrate
 
     end
 
+    def process_technical_metadata obj
+      field = process_metadata_field('date.created', 'DCA-META')
+      obj.date_created = field unless field == ''
+    end
+
     def process_admin_metadata obj
       field = process_metadata_field('date_submitted', 'DC-DETAIL-META', false)
       obj.date_submitted = field unless field == ''
 
-      field = process_metadata_field('date_issued', 'DCA-META', false)
+      field = process_metadata_field('date.issued', 'DCA-META', false)
       obj.date_issued = field unless field == ''
 
-      field = process_metadata_field('date_available', 'DCA-META', false)
+      # TODO: Review from spreadsheet
+      field = process_metadata_field('date.available', 'DCA-META', false)
       obj.date_available = field unless field == ''
 
+      # Use DC Datastream modified
       field = process_metadata_field('date_modified', 'DC-DETAIL-META', false)
       obj.date_modified = field unless field == ''
 
@@ -124,6 +133,7 @@ module FedoraMigrate
       obj.displays_in = field unless field.empty?
 
       #embargo
+
       vis = process_metadata_field('visibility', 'DCA-ADMIN', false)
       obj.visibility = vis unless vis == ''
 
@@ -143,6 +153,20 @@ module FedoraMigrate
 
     def process_collection_metadata obj
       # add to collection
+
+      spec = Gem::Specification.find_by_name("fedora-migrate")
+      gem_root = spec.gem_dir
+
+      db = SQLite3::Database.open "#{gem_root}/collections.sqlite3"
+      row = db.get_first_row "SELECT collection FROM collection_map WHERE pid=\"#{source.pid}\""
+      unless row.nil?
+        col_id =  row.join.strip
+        col = Collection.find(col_id)
+        col.add_members obj.id
+        col.save!
+
+      end
+
     end
 
     def process_relsext_metadata obj
@@ -205,9 +229,6 @@ module FedoraMigrate
       val = process_metadata_field('corpname', 'DCA-META')
       obj.corporate_name = val unless val.empty?
 
-      val = process_metadata_field('corpname', 'DCA-META')
-      obj.corporate_name = val unless val.empty?
-
       val = process_metadata_field('geogname', 'DCA-META')
       obj.complex_subject = val unless val.empty?
 
@@ -241,9 +262,6 @@ module FedoraMigrate
       val = process_metadata_field('isReplacedBy', 'DCA-DETAIL-META')
       obj.is_replaced_by = val unless val.empty?
 
-      val = process_metadata_field('extent', 'DCA-META')
-      obj.extent = val unless val.empty?
-
       val = process_metadata_field('provenance', 'DCA-DETAIL-META')
       obj.provenance = val unless val.empty?
 
@@ -257,7 +275,16 @@ module FedoraMigrate
       obj.edm_rights = val unless val.empty?
 
       val  = process_metadata_field('type', 'DCA-META')
-      obj.dc_type = val unless val.empty?
+      obj.resource_type = val unless val.empty?
+
+      #TDLR-728 for details
+      keep_extent = %w(tufts:UA197.002.002.00002 tufts:18776 tufts:18774 tufts:18933 tufts:MS046.006.00003 tufts:MS046.006.00002 tufts:MS046.006.00001)
+
+      if keep_extent.include?(source.pid)
+        val = process_metadata_field('extent', 'DCA-META', false)
+        obj.extent = val unless val.empty?
+      end
+
     end
 
     def process_metadata_field(field_name,datastream_name,multiple=true)
