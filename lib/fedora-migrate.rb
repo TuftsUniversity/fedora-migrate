@@ -1,7 +1,7 @@
 require "fedora_migrate/version"
 require "active_support"
 require "active_fedora"
-require "curation_concerns"
+require "hyrax"
 require "hydra/head"
 require "rubydora"
 
