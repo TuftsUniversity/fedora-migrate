@@ -1,8 +1,7 @@
 require 'open-uri'
 require 'uri'
-require 'curation_concerns'
-require 'tufts/vocab/tufts_terms'
-require 'rdf/fcrepo3'
+require 'hyrax'
+#require 'rdf/fcrepo3'
 
 module FedoraMigrate
   class TuftsTargetConstructor
@@ -29,7 +28,7 @@ module FedoraMigrate
       obj.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
 
       user = User.find_by_user_key(@depositor_utln)
-      CurationConcerns::Workflow::ActivateObject.call(target: obj, comment: 'activate object', user: user)
+#      CurationConcerns::Workflow::ActivateObject.call(target: obj, comment: 'activate object', user: user)
 
       create_and_add_payload(obj, @payload_primary, @depositor_utln)
 
@@ -47,7 +46,7 @@ module FedoraMigrate
       process_technical_metadata obj
       process_relsext_metadata obj
 
-      obj.save
+#      obj.save
 
       process_collection_metadata obj
 
@@ -373,25 +372,25 @@ module FedoraMigrate
     def candidates
       @candidates = Array(source.models).map do |candidate|
         if candidate == "info:fedora/cm:Text.PDF"
-          "TuftsPdf"
+          "Pdf"
         elsif candidate == "info:fedora/cm:Text.TEI"
-          "TuftsTei"
+          "Tei"
         elsif candidate == "info:fedora/cm:VotingRecord"
-          "TuftsVotingRecord"
+          "VotingRecord"
         elsif candidate == "info:fedora/cm:Text.EAD"
-          "TuftsEad"
+          "Ead"
         elsif candidate == "info:fedora/cm:Image.4DS"
-          "TuftsImage"
+          "Image"
         elsif candidate == "info:fedora/cm:Audio"
-          "TuftsAudio"
-        elsif candidate == "info:fedora/cm:Audio.OralHistory"
-          "TuftsAudio"
+          "Audio"
+        elseif candidate == "info:fedora/cm:Audio.OralHistory"
+          "Audio"
         elsif candidate == "info:fedora/afmodel:TuftsVideo"
-          "TuftsVideo"
+          "Video"
         elsif candidate == "info:fedora/cm:Text.RCR"
-          "TuftsRcr"
+          "Rcr"
         elsif candidate == "info:fedora/cm:Object.Generic"
-          "TuftsGenericObject"
+          "GenericObject"
         else
           candidate
         end
