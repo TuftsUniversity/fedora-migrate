@@ -1,42 +1,69 @@
 desc "Migrate all my objects"
 namespace :tufts do
 
-  desc "define top level collections"
-  task define_top_level_collections: :environment do
+  desc "define top level dca collections"
+  task define_top_level_dca_collections: :environment do
     # top level collections
     collections = ['Manuscripts','New Nation Votes','Test Items','Tufts Scholarship','University Archives','University Publications']
       collections.each do |collection|
         if Collection.where(title: collection).empty?
           a = Collection.new(title: [collection])
-          a.apply_depositor_metadata 'mkorcy01'
+          a.apply_depositor_metadata 'apruit01'
           a.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
           a.save!
         end
       end
   end
 
-  desc "define secondary collections"
-  task define_secondary_collections: :environment do
+  desc "define top level tisch collections"
+  task define_top_level_tisch_collections: :environment do
+    # top level collections
+    collections = ["Trove", "Student Scholarship", "Great Courses", "Faculty Scholarship", "Electronic Theses and Dissertations", "Digitized Books"]
+      collections.each do |collection|
+        if Collection.where(title: collection).empty?
+          a = Collection.new(title: [collection])
+          a.apply_depositor_metadata 'amay02'
+          a.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
+          a.save!
+        end
+      end
+  end
+
+  desc "define secondary dca collections"
+  task define_secondary_dca_collections: :environment do
     spec = Gem::Specification.find_by_name("fedora-migrate")
     gem_root = spec.gem_dir
     row_count = 0
-    CSV.foreach("#{gem_root}/collection_map.csv", :headers => true, :header_converters => :symbol, :converters => :all) do |row|
+    CSV.foreach("#{gem_root}/collection_f3_f4_mapping.csv", :headers => true, :header_converters => :symbol, :converters => :all, encoding: "ISO8859-1:utf-8") do |row|
       puts row_count
       row_count = row_count + 1
-      child_col = row[1]
+      child_col = row[3]
+      ead = row[2]
+      ead = "tufts:UA069.DO.001.DO." + ead unless ead.blank?
+      puts "#{row_count} row, collection: #{child_col} with ead #{ead}" unless child_col.blank?
+
       if Collection.where(title: child_col).empty?
         next if child_col.blank?
-        a = Collection.new(title: [child_col])
-        a.apply_depositor_metadata 'mkorcy01'
-        a.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
-        a.save!
+        secondary_col = Collection.new(title: [child_col])
+        secondary_col.apply_depositor_metadata 'apruit01'
+        secondary_col.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
+        secondary_col.save!
 
-        b = Collection.where(title: row[0])
-        unless b.empty?
-          b.first.add_members a.id
-          b.first.save
+        primary_col = Collection.where(title: row[0])
+        unless primary_col.empty?
+          primary_col.first.add_members secondary_col.id
+          primary_col.first.save!
         end
       end
+    end
+  end
+
+  desc "delete and eradicate all collections"
+  task eradicate_all_collections: :environment do
+    Collection.all.each do |col| 
+      id = col.id
+      col.delete
+      ActiveFedora::Base.eradicate(id)
     end
   end
 
