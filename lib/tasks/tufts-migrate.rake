@@ -35,7 +35,6 @@ namespace :tufts do
     gem_root = spec.gem_dir
     row_count = 0
     CSV.foreach("#{gem_root}/collection_f3_f4_mapping.csv", :headers => true, :header_converters => :symbol, :converters => :all, encoding: "ISO8859-1:utf-8") do |row|
-      puts row_count
       row_count = row_count + 1
       child_col = row[3]
       ead = row[2]
@@ -46,6 +45,7 @@ namespace :tufts do
         next if child_col.blank?
         secondary_col = Collection.new(title: [child_col])
         secondary_col.apply_depositor_metadata 'apruit01'
+        secondary_col.ead = [ead]
         secondary_col.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
         secondary_col.save!
 
