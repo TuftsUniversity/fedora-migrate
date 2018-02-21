@@ -72,23 +72,42 @@ namespace :tufts do
     Collection.all.each {|col| col.delete }
   end
 
-  desc "import collection mapping table"
-  task import_collections: :environment do
+  desc "import dca collection mapping table used to add migrated records to proper collection"
+  task create_dca_migration_mapping_table: :environment do
     spec = Gem::Specification.find_by_name("fedora-migrate")
     gem_root = spec.gem_dir
 
     db = SQLite3::Database.open "#{gem_root}/collections.sqlite3"
+    db.execute("CREATE TABLE IF NOT EXISTS collection_map(collection VARCHAR(40) NOT NULL, pid VARCHAR(40) NOT NULL)")
 
-    CSV.foreach("#{gem_root}/pid_map_collections.csv", :headers => true, :header_converters => :symbol, :converters => :all) do |row|
-
-      #CREATE TABLE collection_map(collection, pid);
-      pid = row[1]
-      col = Collection.where(title: row[0]).first.id
-      db.execute "INSERT INTO collection_map VALUES(\"#{col}\",\"#{pid}\")"
+    CSV.foreach("#{gem_root}/collection_f3_f4_mapping.csv", :headers => true, :header_converters => :symbol, :converters => :all, encoding: "ISO8859-1:utf-8") do |row|
+      pid = row[5]
+      puts "#{pid}"
+      col = Collection.where(title: row[3])
+      next if col.blank?
+      db.execute "REPLACE INTO collection_map VALUES(\"#{col.first.id}\",\"#{pid}\")"
     end
 
     db.close if db
+  end
 
+  desc "import tisch collection mapping table used to add migrated records to proper collection"
+  task create_tisch_migration_mapping_table: :environment do
+    spec = Gem::Specification.find_by_name("fedora-migrate")
+    gem_root = spec.gem_dir
+
+    db = SQLite3::Database.open "#{gem_root}/collections.sqlite3"
+    db.execute("CREATE TABLE IF NOT EXISTS collection_map(collection VARCHAR(40) NOT NULL, pid VARCHAR(40) NOT NULL)")
+
+    CSV.foreach("#{gem_root}/TischHighLevelCollections.csv", :headers => true, :header_converters => :symbol, :converters => :all, encoding: "ISO8859-1:utf-8") do |row|
+      pid = row[0]
+      puts "#{pid}"
+      col = Collection.where(title: row[4])
+      next if col.blank?
+      db.execute "REPLACE INTO collection_map VALUES(\"#{col.first.id}\",\"#{pid}\")"
+    end
+
+    db.close if db
   end
 
   task migrate: :environment do
