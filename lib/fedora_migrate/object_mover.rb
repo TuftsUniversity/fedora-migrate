@@ -44,7 +44,7 @@ module FedoraMigrate
       #puts @options[:target_constructor]
       #byebug
       if @options[:target_constructor] == 'elections'
-        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source,'RECORD-XML', nil, 'mkorcy01').build
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source,'RECORD-XML', nil, 'ebeck01').build
       elsif @options[:target_constructor] == 'eads'
         @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.xml', nil, 'mkorcy01').build
       elsif @options[:target_constructor] == 'images'

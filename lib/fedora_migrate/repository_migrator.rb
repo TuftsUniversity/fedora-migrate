@@ -72,7 +72,8 @@ module FedoraMigrate
         result.object = FedoraMigrate::ObjectMover.new(source, nil, options).migrate
         result.status = true
       rescue StandardError => e
-        result.object = e.inspect
+        #result.object = e.inspect
+        result.object = Array(e.inspect) + Array(e.backtrace)
         result.status = false
       ensure
         report.save(source.pid, result)

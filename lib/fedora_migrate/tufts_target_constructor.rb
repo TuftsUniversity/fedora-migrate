@@ -1,6 +1,7 @@
 require 'open-uri'
 require 'uri'
 require 'hyrax'
+require 'byebug'
 #require 'rdf/fcrepo3'
 
 module FedoraMigrate
@@ -15,21 +16,60 @@ module FedoraMigrate
       @depositor_utln = depositor
     end
 
+    # Convert a legacy Tufts identifier into a predictable and valid Fedora identifier
+    # @param [String] id
+    # @return [String]
+    def convert_id(id)
+      newid = id.downcase
+      newid.slice!('tufts:')
+      newid.tr!('.', '_')
+      newid
+    end
+
     # Override .build to use Fedora's default id minter
     # https://github.com/projecthydra-labs/fedora-migrate/issues/49
     #obj.id FedoraMigrate::Mover.id_component(source)
     def build
       raise FedoraMigrate::Errors::MigrationError, "No qualified targets found in #{source.pid}" if target.nil?
+      admin_set = AdminSet.find(AdminSet::DEFAULT_ID)
 
-      # create target, and apply depositor metadata
-      obj = target.new
+      # use predictable ids till we get this working
+      if true
+        obj = target.new(id: convert_id(source.pid))
+      else
+        obj = target.new
+      end
 
+      # set core data
+      obj.admin_set = admin_set
       obj.apply_depositor_metadata @depositor_utln
       obj.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
 
-      user = User.find_by_user_key(@depositor_utln)
-#      CurationConcerns::Workflow::ActivateObject.call(target: obj, comment: 'activate object', user: user)
+      build_filesets obj
 
+      process_metadata obj
+
+      obj.reload
+
+      obj.file_sets.each do |file_set|
+        CreateDerivativesJob.perform_now(file_set, file_set.public_send(:original_file).id) unless file_set.public_send(:original_file).nil?
+      end
+
+      put_object_into_workflow obj
+
+      obj
+    end
+
+    def process_metadata obj
+      process_desc_metadata obj
+      process_admin_metadata obj
+      # process_relsext_metadata obj
+      obj.save
+
+      process_collection_metadata obj
+    end
+
+    def build_filesets obj
       create_and_add_payload(obj, @payload_primary, @depositor_utln)
 
       #deal with 2 primary datastream objects, storing second object in a new file set
@@ -37,25 +77,21 @@ module FedoraMigrate
 
       #handle a case of bad hand created data on old records
       create_and_add_payload(obj, "ARCHIVAL_SOUND", @depositor_utln) if @payload_primary == "ARCHIVAL_WAV"
+    end
 
-      # back up old data
-      #create_and_add_fcrepo3_set obj
+    def put_object_into_workflow object
+      user = ::User.find_by(username: @depositor_utln)
+      subject = Hyrax::WorkflowActionInfo.new(object, user)
 
-      process_desc_metadata obj
-      process_admin_metadata obj
-      process_technical_metadata obj
-      process_relsext_metadata obj
+      begin
+        Hyrax::Workflow::WorkflowFactory.create(object, {}, user)
+      rescue ActiveRecord::RecordNotUnique
+        puts "Already in Workflow"
+      end
 
-#      obj.save
-
-      process_collection_metadata obj
-
-      active_workflow = Sipity::Workflow.find(2)
-      Sipity::Entity.create!(proxy_for_global_id: obj.to_global_id.to_s,
-                             workflow: active_workflow,
-                             workflow_state: nil)
-
-      obj
+      object = object.reload
+      sipity_workflow_action = PowerConverter.convert_to_sipity_action("publish", scope: subject.entity.workflow) { nil }
+      Hyrax::Workflow::WorkflowActionService.run(subject: subject, action: sipity_workflow_action , comment: "Migrated from Fedora 3")
     end
 
     def create_and_add_payload(obj, payload_stream, depositor_utln)
@@ -72,23 +108,28 @@ module FedoraMigrate
         uri = URI.parse(location)
         target_file = File.basename(uri.path)
         file_set.title = [target_file]
+        file_set.label = target_file
       else
         file_set.title = [source.datastreams[payload_stream].label]
+        file_set.label = source.datastreams[payload_stream].label
       end
 
       file_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
-      #set_voting_record_type file_set
+
       if payload_stream == "GENERIC-CONTENT"
         datastream_content = get_generic_file_from_source(payload_stream)
       else
         datastream_content = get_file_from_source(payload_stream)
       end
-
-
-      user = User.find_by_user_key(file_set.depositor)
-      actor = CurationConcerns::Actors::FileSetActor.new(file_set, user)
-      actor.create_metadata(obj)
+#byebug
+      user = ::User.find_by(username: file_set.depositor)
+      actor = Hyrax::Actors::FileSetActor.new(file_set, user)
+      actor.create_metadata("visibility" => Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC)
       actor.create_content(datastream_content)
+      work_permissions = obj.permissions.map(&:to_hash)
+      Hyrax.config.callback.run(:after_import_local_file_success, file_set, user, datastream_content.path)
+      actor.attach_to_work(obj)
+      actor.file_set.permissions_attributes = work_permissions
       file_set.save
 
       #clean up temp file
@@ -96,17 +137,12 @@ module FedoraMigrate
 
     end
 
-    def process_technical_metadata obj
-      field = process_metadata_field('date.created', 'DCA-META')
-      obj.date_created = field unless field == ''
-    end
-
     def process_admin_metadata obj
       field = process_metadata_field('date_submitted', 'DC-DETAIL-META', false)
-      obj.date_submitted = field unless field == ''
+      obj.date_uploaded = field unless field == ''
 
-      field = process_metadata_field('date.issued', 'DCA-META', false)
-      obj.date_issued = field unless field == ''
+      field = process_metadata_field('date.issued', 'DCA-META')
+      obj.date_issued = field unless field.empty?
 
       # TODO: Review from spreadsheet
       field = process_metadata_field('date.available', 'DCA-META', false)
@@ -115,6 +151,7 @@ module FedoraMigrate
       # Use DC Datastream modified
       field = process_metadata_field('date_modified', 'DC-DETAIL-META', false)
       obj.date_modified = field unless field == ''
+
 
       field = process_metadata_field('license', 'DC-DETAIL-META', false)
       obj.license = field unless field == ''
@@ -131,13 +168,33 @@ module FedoraMigrate
       field = process_metadata_field('displays', 'DCA-ADMIN')
       obj.displays_in = field unless field.empty?
 
+      field = process_metadata_field('qrStatus', 'DCA-ADMIN')
+      obj.qr_status = field unless field.empty?
+
+      field = process_metadata_field('note', 'DCA-ADMIN')
+      obj.qr_note = field unless field.empty?
+
+      field = process_metadata_field('rejectionReason', 'DCA-ADMIN')
+      obj.rejection_reason = field unless field.empty?
+
+      field = process_metadata_field('createdby', 'DCA-ADMIN')
+      obj.createdby = field unless field.empty?
       #embargo
 
-      vis = process_metadata_field('visibility', 'DCA-ADMIN', false)
-      obj.visibility = vis unless vis == ''
+      field = process_metadata_field('startDate', 'DCA-ADMIN', false)
+      obj.admin_start_date = field unless field == ''
 
-      field = process_metadata_field('batchID', 'DCA-ADMIN', false)
-      obj.batch_id = field unless field == ''
+      field = process_metadata_field('retentionPeriod', 'DCA-ADMIN', false)
+      obj.retention_period = field unless field == ''
+
+      field = process_metadata_field('embargo', 'DCA-ADMIN', false)
+      obj.embargo_note = field unless field == ''
+
+      field = process_metadata_field('expDate', 'DCA-ADMIN', false)
+      obj.end_date = field unless field == ''
+
+#      field = process_metadata_field('batchID', 'DCA-ADMIN', false)
+#      obj.batch_id = field unless field == ''
 
       field = process_metadata_field('audience', 'DC-DETAIL-META', false)
       obj.audience = field unless field == ''
@@ -148,6 +205,8 @@ module FedoraMigrate
       field = process_metadata_field('dateCopyrighted', 'DC-DETAIL-META', false)
       obj.date_copyrighted = field unless field == ''
 
+      field = process_metadata_field('creatordept', 'DC-DETAIL-META', false)
+      obj.creator_dept = field unless field == ''
     end
 
     def process_collection_metadata obj
@@ -161,9 +220,8 @@ module FedoraMigrate
       unless row.nil?
         col_id =  row.join.strip
         col = Collection.find(col_id)
-        col.add_members obj.id
-        col.save!
-
+        obj.member_of_collections = [col]
+        obj.save!
       end
 
     end
@@ -191,12 +249,18 @@ module FedoraMigrate
     def process_desc_metadata obj
       val = source.pid
       obj.legacy_pid = val unless val.nil?
+ 
+      field = process_metadata_field('date.created', 'DCA-META')
+      obj.date_created = field unless field == ''
 
       val = process_metadata_field('title', 'DCA-META')
       obj.title = val unless val.empty?
 
+      val = process_metadata_field('isFormatOf', 'DCA-META')
+      obj.is_format_of = val unless val.empty?
+
       val = process_metadata_field('alternative', 'DC-DETAIL-META')
-      obj.alternative  = val unless val.empty?
+      obj.alternative_title  = val unless val.empty?
 
       val = process_metadata_field('creator', 'DCA-META')
       obj.creator = val unless val.empty?
@@ -207,7 +271,7 @@ module FedoraMigrate
       val = process_metadata_field('description', 'DCA-META')
       obj.description = val unless val.empty?
 
-      val = process_metadata_field('abstract', 'DC-DETAIL-META', false)
+      val = process_metadata_field('abstract', 'DC-DETAIL-META')
       obj.abstract = val unless val.empty?
 
       val = process_metadata_field('publisher', 'DCA-META')
@@ -229,7 +293,7 @@ module FedoraMigrate
       obj.corporate_name = val unless val.empty?
 
       val = process_metadata_field('geogname', 'DCA-META')
-      obj.complex_subject = val unless val.empty?
+      obj.geographic_name = val unless val.empty?
 
       val = process_metadata_field('subject', 'DCA-META')
       obj.subject = val unless val.empty?
@@ -246,8 +310,8 @@ module FedoraMigrate
       val = process_metadata_field('temporal', 'DCA-META')
       obj.temporal = val unless val.empty?
 
-      val = process_metadata_field('identifier', 'DCA-META', false)
-      obj.purl = val unless val.empty?
+      val = process_metadata_field('identifier', 'DCA-META')
+      obj.identifier = val unless val.empty?
 
       val = process_metadata_field('references', 'DCA-DETAIL-META')
       obj.references = val unless val.empty?
@@ -261,6 +325,12 @@ module FedoraMigrate
       val = process_metadata_field('isReplacedBy', 'DCA-DETAIL-META')
       obj.is_replaced_by = val unless val.empty?
 
+      val = process_metadata_field('hasFormat', 'DCA-DETAIL-META')
+      obj.has_format = val unless val.empty?
+
+      val = process_metadata_field('hasPart', 'DCA-DETAIL-META')
+      obj.has_part = val unless val.empty?
+
       val = process_metadata_field('provenance', 'DCA-DETAIL-META')
       obj.provenance = val unless val.empty?
 
@@ -270,8 +340,11 @@ module FedoraMigrate
       val = process_metadata_field('funder', 'DCA-DETAIL-META')
       obj.funder = val unless val.empty?
 
+      val = process_metadata_field('format', 'DCA-META')
+      obj.format_label = val unless val.empty?
+
       val = process_metadata_field('rights', 'DCA-META')
-      obj.edm_rights = val unless val.empty?
+      obj.rights_statement = val unless val.empty?
 
       val  = process_metadata_field('type', 'DCA-META')
       obj.resource_type = val unless val.empty?
@@ -312,6 +385,7 @@ module FedoraMigrate
     private
 
     def get_file_from_source(datastream)
+#byebug
       uri = URI.parse(source.datastreams[datastream].location)
       target_file = File.basename(uri.path)
 
@@ -333,28 +407,6 @@ module FedoraMigrate
       voting_record.write Net::HTTP.get(uri)
 
       File.new target_file
-    end
-
-    def create_and_add_fcrepo3_set obj
-      %w{DC RELS-EXT DCA-ADMIN DCA-META DC-DETAIL-META}.each_with_index do |ds, i|
-        next if source.datastreams[ds].content.nil?
-        fcrepo3_set = FileSet.new
-        fcrepo3_set.apply_depositor_metadata @depositor_utln
-        fcrepo3_set.title = ['Fedora 3 Datastreams']
-        fcrepo3_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE
-
-        # Have DC go first so there's always an 'original' ds
-
-        user = User.find_by_user_key(fcrepo3_set.depositor)
-        ds_actor = CurationConcerns::Actors::FileSetActor.new(fcrepo3_set, user)
-        File.open(ds+'.xml', 'w') { |f| f.write(source.datastreams[ds].content) }
-        ds_file = File.open(ds+'.xml', 'r:UTF-8')
-        ds_actor.create_metadata(obj, {"visibility" => Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE})
-        ds_actor.create_content(File.open(ds_file))
-        fcrepo3_set.save
-      end
-
-
     end
 
     def determine_target
