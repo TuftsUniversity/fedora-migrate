@@ -115,26 +115,22 @@ module FedoraMigrate
       end
 
       file_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
+      work_permissions = obj.permissions.map(&:to_hash)
 
       if payload_stream == "GENERIC-CONTENT"
         datastream_content = get_generic_file_from_source(payload_stream)
       else
         datastream_content = get_file_from_source(payload_stream)
       end
-#byebug
+
       user = ::User.find_by(username: file_set.depositor)
       actor = Hyrax::Actors::FileSetActor.new(file_set, user)
       actor.create_metadata("visibility" => Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC)
       actor.create_content(datastream_content)
-      work_permissions = obj.permissions.map(&:to_hash)
       Hyrax.config.callback.run(:after_import_local_file_success, file_set, user, datastream_content.path)
       actor.attach_to_work(obj)
       actor.file_set.permissions_attributes = work_permissions
       file_set.save
-
-      #clean up temp file
-      File.delete(datastream_content) if File.exist?(datastream_content)
-
     end
 
     def process_admin_metadata obj
