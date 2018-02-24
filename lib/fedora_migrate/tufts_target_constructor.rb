@@ -23,6 +23,11 @@ module FedoraMigrate
       newid = id.downcase
       newid.slice!('tufts:')
       newid.tr!('.', '_')
+
+      if number?(newid) 
+        newid =  "pid" + newid
+      end
+
       newid
     end
 
@@ -131,6 +136,11 @@ module FedoraMigrate
       actor.attach_to_work(obj)
       actor.file_set.permissions_attributes = work_permissions
       file_set.save
+    end
+
+    def number?(obj)
+      obj = obj.to_s unless obj.is_a? String
+      /\A[+-]?\d+(\.[\d]+)?\z/.match(obj)
     end
 
     def process_admin_metadata obj
