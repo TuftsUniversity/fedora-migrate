@@ -1,6 +1,27 @@
 desc "Migrate all my objects"
 namespace :tufts do
 
+  desc "populate dark archives users"
+  task populate_dark_archives_users: :environment do
+    dark_archive_users = [{ username: "mkorcy01", email: "Mike.Korcynski@tufts.edu", display_name: "Korcynski, Mike" },
+                          { username: "bgoodm01", email: "brian.goodmon@tufts.edu", display_name: "Goodmon, Brian" },
+                          { username: "batchuser", email: "batchuser@example.com", display_name: "batchuser" },
+                          { username: "tlille01", email: "travis.lilleberg@tufts.edu", display_name: "Lilleberg, Travis" },
+                          { username: "mpeach01", email: "margaret.peachy@tufts.edu", display_name: "Peachy, Margaret" },
+                          { username: "apruit01", email: "adrienne.pruitt@tufts.edu", display_name: "Pruitt, Adrienne" },
+                          { username: "dsanta02", email: "daniel.santamaria@tufts.edu", display_name: "Santamaria, Daniel" },
+                          { username: "smauro01", email: "sari.mauro@tufts.edu", display_name: "Mauro, Sari" }]
+
+    dark_archive_users.each do |dark_archive_user|
+      admin_role = Role.find_by(name: 'admin')
+      user = User.find_or_create_by!(username: dark_archive_user[:username], email: dark_archive_user[:email], display_name: dark_archive_user[:display_name]) do |u|
+        u.password = SecureRandom.base64(24)
+      end
+
+      user.add_role('admin') unless user.roles.include? admin_role
+    end
+  end
+
   desc "define top level dca collections"
   task define_top_level_dca_collections: :environment do
     # top level collections
