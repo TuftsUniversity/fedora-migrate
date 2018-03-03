@@ -136,6 +136,42 @@ namespace :tufts do
     puts results
   end
 
+   def convert_id(id)
+     newid = id.downcase
+     newid.slice!('tufts:')
+     newid.tr!('.', '_')
+
+     if number?(newid)
+       newid =  "pid" + newid
+     end
+
+     newid
+  end
+
+  def number?(obj)
+    obj = obj.to_s unless obj.is_a? String
+    /\A[+-]?\d+(\.[\d]+)?\z/.match(obj)
+  end
+
+  desc "Eradicate elections"
+  task eradicate_elections: :environment do
+    objs = []
+    pids = File.open("elections_to_migrate.txt").read
+    pids.each_line do |pid|
+      begin
+        pid = convert_id(pid.squish)
+        puts "Get #{pid}"
+        work = ActiveFedora::Base.find(pid)
+        work.delete
+        ActiveFedora::Base.eradicate(pid)
+      rescue ActiveFedora::ObjectNotFoundError
+        # no-op
+      rescue Ldp::Gone
+        puts "#{pid} doesn't exist"
+      end
+    end
+  end
+
   desc "Migrate election records"
   task migrate_elections: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
