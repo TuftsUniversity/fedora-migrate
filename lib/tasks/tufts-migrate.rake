@@ -171,6 +171,11 @@ namespace :tufts do
     end
   end
 
+  desc "Eradicate images"
+  task eradicate_images: :environment do
+    eradicate_records('images')
+  end
+
   desc "Eradicate eads"
   task eradicate_eads: :environment do
     eradicate_records('eads')
