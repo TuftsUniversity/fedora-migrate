@@ -153,10 +153,9 @@ namespace :tufts do
     /\A[+-]?\d+(\.[\d]+)?\z/.match(obj)
   end
 
-  desc "Eradicate elections"
-  task eradicate_elections: :environment do
+  def eradicate_records(type)
     objs = []
-    pids = File.open("elections_to_migrate.txt").read
+    pids = File.open("#{type}_to_migrate.txt").read
     pids.each_line do |pid|
       begin
         pid = convert_id(pid.squish)
@@ -170,6 +169,16 @@ namespace :tufts do
         puts "#{pid} doesn't exist"
       end
     end
+  end
+
+  desc "Eradicate eads"
+  task eradicate_eads: :environment do
+    eradicate_records('eads')
+  end
+
+  desc "Eradicate elections"
+  task eradicate_elections: :environment do
+    eradicate_records('elections')
   end
 
   desc "Migrate election records"
