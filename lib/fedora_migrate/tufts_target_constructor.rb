@@ -49,7 +49,7 @@ module FedoraMigrate
       obj.admin_set = admin_set
       obj.apply_depositor_metadata @depositor_utln
       obj.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
-      obj.date_uploaded = source.create_date
+      obj.date_uploaded =  source.profile['objCreateDate']
       obj.date_modified = DateTime.current.to_date
 
       build_filesets obj
@@ -357,7 +357,17 @@ module FedoraMigrate
       obj.format_label = val unless val.empty?
 
       val = process_metadata_field('rights', 'DCA-META')
-      obj.rights_statement = val unless val.empty?
+      unless val.empty?
+        known = ["http://dca.tufts.edu/ua/access/rights-pd.html",
+                 "http://dca.tufts.edu/ua/access/rights.html",
+                 "http://sites.tufts.edu/dca/research-help/copyright-and-citations/",
+                 "http://sites.tufts.edu/dca/about-us/research-help/reproductions-and-use/"]
+        unless (known & val).empty?
+          val = ["http://sites.tufts.edu/dca/about-us/research-help/reproductions-and-use/"]
+        end  
+
+        obj.rights_statement = val
+      end
 
       val  = process_metadata_field('type', 'DCA-META')
       obj.resource_type = val unless val.empty?
