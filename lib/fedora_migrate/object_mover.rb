@@ -43,24 +43,42 @@ module FedoraMigrate
     def target
       #puts @options[:target_constructor]
       #byebug
+      xml = Nokogiri::XML(source.datastreams['DCA-ADMIN'].content).remove_namespaces!
+      field_values = xml.xpath("//steward")
+      target_value = 'tisch'
+      unless field_values.empty?
+        target_value = field_values.first.text
+      else
+        target_value = ''
+      end
+      utln = 'apruit01'
+
+      if target_value == 'tisch'
+        utln='amay02'
+      elsif target_value == 'sample'
+        utln='mkorcy01'
+      elsif target_value == 'library'
+        utln='amay02'
+      end
+
       if @options[:target_constructor] == 'elections'
         @target ||= FedoraMigrate::TuftsTargetConstructor.new(source,'RECORD-XML', nil, 'ebeck01').build
       elsif @options[:target_constructor] == 'eads'
-        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.xml', nil, 'mkorcy01').build
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.xml', nil, utln).build
       elsif @options[:target_constructor] == 'images'
-        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.tif', nil, 'mkorcy01').build
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.tif', nil, utln).build
       elsif @options[:target_constructor] == 'pdfs'
-        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.pdf', 'Transfer.binary', 'mkorcy01').build
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.pdf', 'Transfer.binary', utln).build
       elsif @options[:target_constructor] == 'teis'
-        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.xml', nil, 'mkorcy01').build
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.xml', nil, utln).build
       elsif @options[:target_constructor] == 'audio'
-        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'ARCHIVAL_WAV', 'ARCHIVAL_XML', 'mkorcy01').build
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'ARCHIVAL_WAV', 'ARCHIVAL_XML', utln).build
       elsif @options[:target_constructor] == 'video'
-        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.video', 'ARCHIVAL_XML', 'mkorcy01').build
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.video', 'ARCHIVAL_XML', utln).build
       elsif @options[:target_constructor] == 'rcrs'
-        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'RCR-CONTENT', nil, 'mkorcy01').build
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'RCR-CONTENT', nil, utln).build
       elsif @options[:target_constructor] == 'generics'
-        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'GENERIC-CONTENT', nil, 'mkorcy01').build
+        @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'GENERIC-CONTENT', nil, utln).build
       else
         puts "** UNKNOWN Target **"
         exit
