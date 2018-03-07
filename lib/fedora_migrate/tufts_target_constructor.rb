@@ -49,6 +49,8 @@ module FedoraMigrate
       obj.admin_set = admin_set
       obj.apply_depositor_metadata @depositor_utln
       obj.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
+      obj.date_uploaded = source.create_date
+      obj.date_modified = DateTime.current.to_date
 
       build_filesets obj
 
