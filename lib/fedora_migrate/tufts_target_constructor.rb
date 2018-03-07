@@ -186,6 +186,11 @@ module FedoraMigrate
       obj.rejection_reason = field unless field.empty?
 
       field = process_metadata_field('createdby', 'DCA-ADMIN')
+      unless field.empty?
+        if field.include? 'externalXSLT'
+          field = ["amay02 via batch ingest"]
+        end
+      end
       obj.createdby = field unless field.empty?
       #embargo
 
