@@ -92,7 +92,7 @@ module FedoraMigrate
     def migrate_datastreams
       migrate_content_datastreams
   #    migrate_permissions
-      migrate_dates
+#      migrate_dates
     end
 
     # We have to call save before migrating content datastreams, otherwise versions aren't recorded
