@@ -146,8 +146,8 @@ module FedoraMigrate
     end
 
     def process_admin_metadata obj
-      field = process_metadata_field('date_submitted', 'DC-DETAIL-META', false)
-      obj.date_uploaded = field unless field == ''
+#      field = process_metadata_field('date_submitted', 'DC-DETAIL-META', false)
+#      obj.date_uploaded = field unless field == ''
 
       field = process_metadata_field('date.issued', 'DCA-META')
       obj.date_issued = field unless field.empty?
@@ -157,8 +157,8 @@ module FedoraMigrate
       obj.date_available = field unless field == ''
 
       # Use DC Datastream modified
-      field = process_metadata_field('date_modified', 'DC-DETAIL-META', false)
-      obj.date_modified = field unless field == ''
+#      field = process_metadata_field('date_modified', 'DC-DETAIL-META', false)
+#      obj.date_modified = field unless field == ''
 
 
       field = process_metadata_field('license', 'DC-DETAIL-META', false)
