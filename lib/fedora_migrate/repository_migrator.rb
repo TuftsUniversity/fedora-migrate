@@ -53,6 +53,8 @@ module FedoraMigrate
           objs << FedoraMigrate.source.connection.find(pid)
         rescue Rubydora::FedoraInvalidRequest => e
           puts "Skipping #{pid}"
+        rescue Rubydora::RecordNotFound => e
+          puts "Skipping #{pid}"
         end
       end
 
