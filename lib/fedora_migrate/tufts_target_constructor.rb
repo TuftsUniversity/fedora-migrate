@@ -49,7 +49,7 @@ module FedoraMigrate
       obj.admin_set = admin_set
       obj.apply_depositor_metadata @depositor_utln
       obj.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
-      obj.date_uploaded =  source.profile['objCreateDate']
+      obj.date_uploaded =  DateTime.parse(source.profile['objCreateDate'])
       obj.date_modified = DateTime.current.to_date
 
       build_filesets obj
@@ -95,10 +95,20 @@ module FedoraMigrate
       rescue ActiveRecord::RecordNotUnique
         puts "Already in Workflow"
       end
-
-      object = object.reload
-      sipity_workflow_action = PowerConverter.convert_to_sipity_action("publish", scope: subject.entity.workflow) { nil }
-      Hyrax::Workflow::WorkflowActionService.run(subject: subject, action: sipity_workflow_action , comment: "Migrated from Fedora 3")
+      tries = 5
+      begin
+        object = object.reload
+        sipity_workflow_action = PowerConverter.convert_to_sipity_action("publish", scope: subject.entity.workflow) { nil }
+        Hyrax::Workflow::WorkflowActionService.run(subject: subject, action: sipity_workflow_action , comment: "Migrated from Fedora 3")
+      rescue NoMethodError
+        tries -= 1
+        if tries > 0
+          sleep(5.seconds)
+          retry
+        else
+          logger.error "Fixture file missing original for #{file_set.id}"
+        end
+      end
     end
 
     def create_and_add_payload(obj, payload_stream, depositor_utln)
