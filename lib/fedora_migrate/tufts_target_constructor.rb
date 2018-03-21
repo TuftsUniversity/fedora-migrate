@@ -180,6 +180,9 @@ module FedoraMigrate
       field = process_metadata_field('steward', 'DCA-ADMIN', false)
       obj.steward = field unless field == ''
 
+      field = process_metadata_field('download', 'DCA-ADMIN', false)
+      obj.downloadable = field unless field == ''
+
       field = process_metadata_field('comment', 'DCA-ADMIN', false)
       obj.internal_note =field unless field == ''
 
@@ -316,7 +319,7 @@ module FedoraMigrate
       obj.corporate_name = val unless val.empty?
 
       val = process_metadata_field('geogname', 'DCA-META')
-      obj.geographic_name = val unless val.empty?
+      obj.geog_name = val unless val.empty?
 
       val = process_metadata_field('subject', 'DCA-META')
       obj.subject = val unless val.empty?
