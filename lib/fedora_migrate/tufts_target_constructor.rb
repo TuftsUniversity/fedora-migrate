@@ -24,7 +24,7 @@ module FedoraMigrate
       newid.slice!('tufts:')
       newid.tr!('.', '_')
 
-      if number?(newid) 
+      if number?(newid)
         newid =  "pid" + newid
       end
 
@@ -275,7 +275,7 @@ module FedoraMigrate
     def process_desc_metadata obj
       val = source.pid
       obj.legacy_pid = val unless val.nil?
- 
+
       field = process_metadata_field('date.created', 'DCA-META')
       obj.date_created = field unless field == ''
 
@@ -364,6 +364,8 @@ module FedoraMigrate
       obj.rights_holder = val unless val.empty?
 
       val = process_metadata_field('funder', 'DCA-DETAIL-META')
+      additional_funders = process_metadata_field('funder', 'DCA-DETAIL-META')
+      val = val + additional_funders
       obj.funder = val unless val.empty?
 
       val = process_metadata_field('format', 'DCA-META')
@@ -377,7 +379,7 @@ module FedoraMigrate
                  "http://sites.tufts.edu/dca/about-us/research-help/reproductions-and-use/"]
         unless (known & val).empty?
           val = ["http://sites.tufts.edu/dca/about-us/research-help/reproductions-and-use/"]
-        end  
+        end
 
         obj.rights_statement = val
       end
@@ -488,4 +490,3 @@ module FedoraMigrate
 
 
 end
-
