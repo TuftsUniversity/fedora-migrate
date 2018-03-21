@@ -363,7 +363,7 @@ module FedoraMigrate
       val = process_metadata_field('rightsHolder', 'DCA-DETAIL-META')
       obj.rights_holder = val unless val.empty?
 
-      val = process_metadata_field('funder', 'DCA-DETAIL-META')
+      val = process_metadata_field('funder', 'DCA-META')
       additional_funders = process_metadata_field('funder', 'DCA-DETAIL-META')
       val = val + additional_funders
       obj.funder = val unless val.empty?
