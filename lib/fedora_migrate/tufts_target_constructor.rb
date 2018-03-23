@@ -58,9 +58,9 @@ module FedoraMigrate
 
       obj.reload
 
-      obj.file_sets.each do |file_set|
-        CreateDerivativesJob.perform_now(file_set, file_set.public_send(:original_file).id) unless file_set.public_send(:original_file).nil?
-      end
+#      obj.file_sets.each do |file_set|
+#        CreateDerivativesJob.perform_now(file_set, file_set.public_send(:original_file).id) unless file_set.public_send(:original_file).nil?
+#      end
 
       put_object_into_workflow obj
 
