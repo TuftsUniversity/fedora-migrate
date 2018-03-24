@@ -194,6 +194,11 @@ namespace :tufts do
     eradicate_records('pdfs')
   end
 
+  desc "Eradicate videos"
+  task eradicate_audios: :environment do
+    eradicate_records('videos')
+  end
+
   desc "Eradicate audios"
   task eradicate_audios: :environment do
     eradicate_records('audios')
