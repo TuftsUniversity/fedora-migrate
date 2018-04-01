@@ -14,6 +14,7 @@ module FedoraMigrate
       @payload_primary = payload_stream
       @payload_secondary = secondary_payload_stream
       @depositor_utln = depositor
+      #@logger = Logger.new("#{Rails.root}/log/migration.log")
     end
 
     # Convert a legacy Tufts identifier into a predictable and valid Fedora identifier
@@ -103,10 +104,10 @@ module FedoraMigrate
       rescue NoMethodError
         tries -= 1
         if tries > 0
-          sleep(5.seconds)
+          sleep(15.seconds)
           retry
         else
-          logger.error "Fixture file missing original for #{file_set.id}"
+          Rails.logger.error "Fixture file missing original for #{@source.pid}"
         end
       end
     end
@@ -163,7 +164,7 @@ module FedoraMigrate
       obj.date_issued = field unless field.empty?
 
       # TODO: Review from spreadsheet
-      field = process_metadata_field('date.available', 'DCA-META', false)
+      field = process_metadata_field('date.available', 'DCA-META')
       obj.date_available = field unless field == ''
 
       # Use DC Datastream modified
@@ -171,7 +172,7 @@ module FedoraMigrate
 #      obj.date_modified = field unless field == ''
 
 
-      field = process_metadata_field('license', 'DC-DETAIL-META', false)
+      field = process_metadata_field('license', 'DC-DETAIL-META')
       obj.license = field unless field == ''
 
       field = process_metadata_field('accrualPolicy', 'DC-DETAIL-META', false)
@@ -307,7 +308,7 @@ module FedoraMigrate
       obj.source = val unless val.empty?
 
       val = process_metadata_field('date', 'DC-DETAIL-META')
-      obj.date = val unless val.empty?
+      obj.primary_date = val unless val.empty?
 
       val = process_metadata_field('language', 'DCA-META')
       obj.language = val unless val.empty?
