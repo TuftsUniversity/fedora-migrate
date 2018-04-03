@@ -331,7 +331,7 @@ module FedoraMigrate
       val = process_metadata_field('spatial', 'DCA-DETAIL-META')
       obj.spatial = val unless val.empty?
 
-      val = process_metadata_field('bibliographic_citation', 'DCA-META')
+      val = process_metadata_field('bibliographicCitation', 'DCA-META')
       obj.bibliographic_citation = val unless val.empty?
 
       val = process_metadata_field('temporal', 'DCA-META')
