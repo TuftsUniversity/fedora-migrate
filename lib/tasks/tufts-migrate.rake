@@ -39,7 +39,14 @@ namespace :tufts do
       user.add_role('admin') unless user.roles.include? admin_role
     end
   end
-
+  desc "create migration user"
+  task create_migration_user: :environment do
+      @user = User.find_or_create_by!(email: 'f3migrationtool@tufts.edu') do |user|
+        user.username = 'migration'
+        user.password = SecureRandom.base64(24)
+        user.add_role('admin')
+      end
+  end
   desc "define top level dca collections"
   task define_top_level_dca_collections: :environment do
     # top level collections
@@ -222,6 +229,11 @@ namespace :tufts do
   desc "Eradicate elections"
   task eradicate_elections: :environment do
     eradicate_records('elections')
+  end
+
+  desc "Eradicate generics"
+  task eradicate_generics: :environment do
+    eradicate_records('generics')
   end
 
   desc "Migrate election records"
