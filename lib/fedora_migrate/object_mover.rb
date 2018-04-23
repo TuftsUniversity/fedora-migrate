@@ -51,7 +51,7 @@ module FedoraMigrate
       else
         target_value = ''
       end
-      utln = 'apruit01'
+      utln = 'migration'
 
       if target_value == 'tisch'
         utln='amay02'
