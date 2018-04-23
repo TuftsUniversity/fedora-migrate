@@ -38,7 +38,7 @@ module FedoraMigrate
     def build
       raise FedoraMigrate::Errors::MigrationError, "No qualified targets found in #{source.pid}" if target.nil?
       admin_set = AdminSet.find(AdminSet::DEFAULT_ID)
-
+puts("A: " + Time.now.to_s)
       # use predictable ids till we get this working
       if true
         obj = target.new(id: convert_id(source.pid))
@@ -53,18 +53,22 @@ module FedoraMigrate
       obj.date_uploaded =  DateTime.parse(source.profile['objCreateDate'])
       obj.date_modified = DateTime.current.to_date
 
+puts("B: " + Time.now.to_s)
       build_filesets obj
-
+puts("C: " + Time.now.to_s)
       process_metadata obj
 
+puts("D: " + Time.now.to_s)
       obj.reload
 
 #      obj.file_sets.each do |file_set|
 #        CreateDerivativesJob.perform_now(file_set, file_set.public_send(:original_file).id) unless file_set.public_send(:original_file).nil?
 #      end
 
-      put_object_into_workflow obj
+puts("E: " + Time.now.to_s)
+      #put_object_into_workflow obj
 
+puts("F: " + Time.now.to_s)
       obj
     end
 
@@ -96,7 +100,7 @@ module FedoraMigrate
       rescue ActiveRecord::RecordNotUnique
         puts "Already in Workflow"
       end
-      tries = 5
+      tries = 20
       begin
         object = object.reload
         sipity_workflow_action = PowerConverter.convert_to_sipity_action("publish", scope: subject.entity.workflow) { nil }
@@ -104,7 +108,7 @@ module FedoraMigrate
       rescue NoMethodError
         tries -= 1
         if tries > 0
-          sleep(15.seconds)
+          sleep(5.seconds)
           retry
         else
           Rails.logger.error "Fixture file missing original for #{@source.pid}"
@@ -116,10 +120,11 @@ module FedoraMigrate
       # create fileset and apply depository metadata
 
       return if source.datastreams[payload_stream].content.nil?
-
+puts("1: " + Time.now.to_s)
       file_set = FileSet.new
       file_set.apply_depositor_metadata depositor_utln
 
+puts("2: " + Time.now.to_s)
       if payload_stream == "GENERIC-CONTENT"
         @doc = Nokogiri::XML(source.datastreams[payload_stream].content).remove_namespaces!
         location = @doc.xpath('//link').text
@@ -132,6 +137,7 @@ module FedoraMigrate
         file_set.label = source.datastreams[payload_stream].label
       end
 
+puts("3: " + Time.now.to_s)
       file_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
       work_permissions = obj.permissions.map(&:to_hash)
 
@@ -141,13 +147,17 @@ module FedoraMigrate
         datastream_content = get_file_from_source(payload_stream)
       end
 
+puts("4: " + Time.now.to_s)
       user = ::User.find_by(username: file_set.depositor)
       actor = Hyrax::Actors::FileSetActor.new(file_set, user)
       actor.create_metadata("visibility" => Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC)
       actor.create_content(datastream_content)
-      Hyrax.config.callback.run(:after_import_local_file_success, file_set, user, datastream_content.path)
+puts("5: " + Time.now.to_s)
+      #Hyrax.config.callback.run(:after_import_local_file_success, file_set, user, datastream_content.path)
       actor.attach_to_work(obj)
+puts("6: " + Time.now.to_s)
       actor.file_set.permissions_attributes = work_permissions
+puts("9: " + Time.now.to_s)
       file_set.save
     end
 
@@ -202,7 +212,8 @@ module FedoraMigrate
       field = process_metadata_field('createdby', 'DCA-ADMIN')
       unless field.empty?
         if field.include? 'externalXSLT'
-          field = ["amay02 via batch ingest"]
+          steward = process_metadata_field('steward', 'DCA-ADMIN', false)
+          field = ["amay02 via batch ingest"] if steward == 'tisch'
         end
       end
       obj.createdby = field unless field.empty?
@@ -292,6 +303,9 @@ module FedoraMigrate
       val = process_metadata_field('creator', 'DCA-META')
       obj.creator = val unless val.empty?
 
+      val = process_metadata_field('isPartOf', 'DCA-META')
+      obj.is_part_of = val unless val.empty?
+
       val = process_metadata_field('contributor', 'DCA-META')
       obj.contributor = val unless val.empty?
 
@@ -325,10 +339,10 @@ module FedoraMigrate
       val = process_metadata_field('subject', 'DCA-META')
       obj.subject = val unless val.empty?
 
-      val = process_metadata_field('genre', 'DCA-DETAIL-META')
+      val = process_metadata_field('genre', 'DC-DETAIL-META')
       obj.genre = val unless val.empty?
 
-      val = process_metadata_field('spatial', 'DCA-DETAIL-META')
+      val = process_metadata_field('spatial', 'DC-DETAIL-META')
       obj.spatial = val unless val.empty?
 
       val = process_metadata_field('bibliographicCitation', 'DCA-META')
@@ -340,35 +354,35 @@ module FedoraMigrate
       val = process_metadata_field('identifier', 'DCA-META')
       obj.identifier = val unless val.empty?
 
-      val = process_metadata_field('references', 'DCA-DETAIL-META')
+      val = process_metadata_field('references', 'DC-DETAIL-META')
       obj.references = val unless val.empty?
 
-      val = process_metadata_field('replaces', 'DCA-DETAIL-META')
+      val = process_metadata_field('replaces', 'DC-DETAIL-META')
       obj.replaces = val unless val.empty?
 
-      val = process_metadata_field('toc', 'DCA-DETAIL-META')
+      val = process_metadata_field('toc', 'DC-DETAIL-META')
       obj.table_of_contents = val unless val.empty?
 
-      val = process_metadata_field('isReplacedBy', 'DCA-DETAIL-META')
+      val = process_metadata_field('isReplacedBy', 'DC-DETAIL-META')
       obj.is_replaced_by = val unless val.empty?
 
-      val = process_metadata_field('hasFormat', 'DCA-DETAIL-META')
+      val = process_metadata_field('hasFormat', 'DC-DETAIL-META')
       obj.has_format = val unless val.empty?
 
-      val = process_metadata_field('hasPart', 'DCA-DETAIL-META')
+      val = process_metadata_field('hasPart', 'DC-DETAIL-META')
       obj.has_part = val unless val.empty?
 
-      val = process_metadata_field('provenance', 'DCA-DETAIL-META')
+      val = process_metadata_field('provenance', 'DC-DETAIL-META')
       obj.provenance = val unless val.empty?
 
-      val = process_metadata_field('rightsHolder', 'DCA-DETAIL-META')
+      val = process_metadata_field('rightsHolder', 'DC-DETAIL-META')
       obj.rights_holder = val unless val.empty?
 
-      val = process_metadata_field('accessRights', 'DCA-DETAIL-META')
-      obj.rights_note = val unless val.empty?
+      field = process_metadata_field('accessRights', 'DC-DETAIL-META', false)
+      obj.rights_note = field unless field == ''
 
       val = process_metadata_field('funder', 'DCA-META')
-      additional_funders = process_metadata_field('funder', 'DCA-DETAIL-META')
+      additional_funders = process_metadata_field('funder', 'DC-DETAIL-META')
       val = val + additional_funders
       obj.funder = val unless val.empty?
 
@@ -477,7 +491,7 @@ module FedoraMigrate
           "Image"
         elsif candidate == "info:fedora/cm:Audio"
           "Audio"
-        elseif candidate == "info:fedora/cm:Audio.OralHistory"
+        elsif candidate == "info:fedora/cm:Audio.OralHistory"
           "Audio"
         elsif candidate == "info:fedora/afmodel:TuftsVideo"
           "Video"
