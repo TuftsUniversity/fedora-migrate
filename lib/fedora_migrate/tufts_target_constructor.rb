@@ -194,8 +194,8 @@ puts("9: " + Time.now.to_s)
       field = process_metadata_field('download', 'DCA-ADMIN', false)
       obj.downloadable = field unless field == ''
 
-      field = process_metadata_field('comment', 'DCA-ADMIN', false)
-      obj.internal_note =field unless field == ''
+      field = process_metadata_field('comment', 'DCA-ADMIN')
+      obj.internal_note =field unless field.empty?
 
       field = process_metadata_field('displays', 'DCA-ADMIN')
       obj.displays_in = field unless field.empty?
@@ -219,11 +219,11 @@ puts("9: " + Time.now.to_s)
       obj.createdby = field unless field.empty?
       #embargo
 
-      field = process_metadata_field('startDate', 'DCA-ADMIN', false)
-      obj.admin_start_date = field unless field == ''
+      field = process_metadata_field('startDate', 'DCA-ADMIN')
+      obj.admin_start_date = field unless field.empty?
 
-      field = process_metadata_field('retentionPeriod', 'DCA-ADMIN', false)
-      obj.retention_period = field unless field == ''
+      field = process_metadata_field('retentionPeriod', 'DCA-ADMIN')
+      obj.retention_period = field unless field.empty?
 
       field = process_metadata_field('embargo', 'DCA-ADMIN', false)
       obj.embargo_note = field unless field == ''
@@ -237,11 +237,11 @@ puts("9: " + Time.now.to_s)
       field = process_metadata_field('audience', 'DC-DETAIL-META', false)
       obj.audience = field unless field == ''
 
-      field = process_metadata_field('dateAccepted', 'DC-DETAIL-META', false)
-      obj.date_accepted = field unless field == ''
+      field = process_metadata_field('dateAccepted', 'DC-DETAIL-META')
+      obj.date_accepted = field unless field.empty?
 
-      field = process_metadata_field('dateCopyrighted', 'DC-DETAIL-META', false)
-      obj.date_copyrighted = field unless field == ''
+      field = process_metadata_field('dateCopyrighted', 'DC-DETAIL-META')
+      obj.date_copyrighted = field unless field.empty?
 
       field = process_metadata_field('creatordept', 'DC-DETAIL-META', false)
       obj.creator_dept = field unless field == ''
@@ -306,7 +306,7 @@ puts("9: " + Time.now.to_s)
       val = process_metadata_field('isPartOf', 'DCA-META')
       obj.is_part_of = val unless val.empty?
 
-      val = process_metadata_field('contributor', 'DCA-META')
+      val = process_metadata_field('contributor', 'DC-DETAIL-META')
       obj.contributor = val unless val.empty?
 
       val = process_metadata_field('description', 'DCA-META')
@@ -343,7 +343,7 @@ puts("9: " + Time.now.to_s)
       obj.genre = val unless val.empty?
 
       val = process_metadata_field('spatial', 'DC-DETAIL-META')
-      obj.spatial = val unless val.empty?
+      obj.geographic_name = val unless val.empty?
 
       val = process_metadata_field('bibliographicCitation', 'DCA-META')
       obj.bibliographic_citation = val unless val.empty?
@@ -354,8 +354,8 @@ puts("9: " + Time.now.to_s)
       val = process_metadata_field('identifier', 'DCA-META')
       obj.identifier = val unless val.empty?
 
-      val = process_metadata_field('references', 'DC-DETAIL-META')
-      obj.references = val unless val.empty?
+#      val = process_metadata_field('references', 'DC-DETAIL-META')
+#      obj.references = val unless val.empty?
 
       val = process_metadata_field('replaces', 'DC-DETAIL-META')
       obj.replaces = val unless val.empty?
