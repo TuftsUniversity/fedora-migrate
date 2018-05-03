@@ -232,7 +232,7 @@ module FedoraMigrate
       field = process_metadata_field('dateCopyrighted', 'DC-DETAIL-META')
       obj.date_copyrighted = field unless field.empty?
 
-      field = process_metadata_field('creatordept', 'DCA-ADMIN', false)
+      field = process_metadata_field('creatordept', 'DCA-ADMIN', true)
       obj.creator_department = field unless field == ''
     end
 
