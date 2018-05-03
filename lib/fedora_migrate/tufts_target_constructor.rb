@@ -38,7 +38,6 @@ module FedoraMigrate
     def build
       raise FedoraMigrate::Errors::MigrationError, "No qualified targets found in #{source.pid}" if target.nil?
       admin_set = AdminSet.find(AdminSet::DEFAULT_ID)
-puts("A: " + Time.now.to_s)
       # use predictable ids till we get this working
       if true
         obj = target.new(id: convert_id(source.pid))
@@ -53,22 +52,17 @@ puts("A: " + Time.now.to_s)
       obj.date_uploaded =  DateTime.parse(source.profile['objCreateDate'])
       obj.date_modified = DateTime.current.to_date
 
-puts("B: " + Time.now.to_s)
       build_filesets obj
-puts("C: " + Time.now.to_s)
       process_metadata obj
 
-puts("D: " + Time.now.to_s)
       obj.reload
 
 #      obj.file_sets.each do |file_set|
 #        CreateDerivativesJob.perform_now(file_set, file_set.public_send(:original_file).id) unless file_set.public_send(:original_file).nil?
 #      end
 
-puts("E: " + Time.now.to_s)
-      #put_object_into_workflow obj
+      put_object_into_workflow obj
 
-puts("F: " + Time.now.to_s)
       obj
     end
 
@@ -79,6 +73,8 @@ puts("F: " + Time.now.to_s)
       obj.save
 
       process_collection_metadata obj
+      obj.reload
+      obj.save
     end
 
     def build_filesets obj
@@ -120,11 +116,9 @@ puts("F: " + Time.now.to_s)
       # create fileset and apply depository metadata
 
       return if source.datastreams[payload_stream].content.nil?
-puts("1: " + Time.now.to_s)
       file_set = FileSet.new
       file_set.apply_depositor_metadata depositor_utln
 
-puts("2: " + Time.now.to_s)
       if payload_stream == "GENERIC-CONTENT"
         @doc = Nokogiri::XML(source.datastreams[payload_stream].content).remove_namespaces!
         location = @doc.xpath('//link').text
@@ -137,27 +131,22 @@ puts("2: " + Time.now.to_s)
         file_set.label = source.datastreams[payload_stream].label
       end
 
-puts("3: " + Time.now.to_s)
       file_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
       work_permissions = obj.permissions.map(&:to_hash)
 
       if payload_stream == "GENERIC-CONTENT"
         datastream_content = get_generic_file_from_source(payload_stream)
       else
+
         datastream_content = get_file_from_source(payload_stream)
       end
 
-puts("4: " + Time.now.to_s)
       user = ::User.find_by(username: file_set.depositor)
       actor = Hyrax::Actors::FileSetActor.new(file_set, user)
       actor.create_metadata("visibility" => Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC)
       actor.create_content(datastream_content)
-puts("5: " + Time.now.to_s)
-      #Hyrax.config.callback.run(:after_import_local_file_success, file_set, user, datastream_content.path)
       actor.attach_to_work(obj)
-puts("6: " + Time.now.to_s)
       actor.file_set.permissions_attributes = work_permissions
-puts("9: " + Time.now.to_s)
       file_set.save
     end
 
@@ -447,6 +436,8 @@ puts("9: " + Time.now.to_s)
 
       voting_record = File.new target_file, 'wb'
       voting_record.write source.datastreams[datastream].content.body
+      voting_record.flush
+      voting_record.close
       #byebug
       File.new target_file
 
@@ -461,6 +452,8 @@ puts("9: " + Time.now.to_s)
 
       voting_record = File.new target_file, 'wb'
       voting_record.write Net::HTTP.get(uri)
+      voting_record.flush
+      voting_record.close
 
       File.new target_file
     end
