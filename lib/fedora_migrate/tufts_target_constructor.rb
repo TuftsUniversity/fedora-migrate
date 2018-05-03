@@ -232,7 +232,7 @@ module FedoraMigrate
       field = process_metadata_field('dateCopyrighted', 'DC-DETAIL-META')
       obj.date_copyrighted = field unless field.empty?
 
-      field = process_metadata_field('creatordept', 'DC-DETAIL-META', false)
+      field = process_metadata_field('creatordept', 'DCA-ADMIN', false)
       obj.creator_dept = field unless field == ''
     end
 
@@ -307,10 +307,10 @@ module FedoraMigrate
       val = process_metadata_field('source', 'DCA-META')
       obj.source = val unless val.empty?
 
-      val = process_metadata_field('date', 'DC-DETAIL-META')
+      val = process_metadata_field('date', 'DCA-META')
       obj.primary_date = val unless val.empty?
 
-      val = process_metadata_field('language', 'DCA-META')
+      val = process_metadata_field('language', 'DC-DETAIL-META')
       obj.language = val unless val.empty?
 
       val = process_metadata_field('persname', 'DCA-META')
