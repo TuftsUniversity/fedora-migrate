@@ -283,9 +283,6 @@ module FedoraMigrate
       val = process_metadata_field('title', 'DCA-META')
       obj.title = val unless val.empty?
 
-      val = process_metadata_field('isFormatOf', 'DCA-META')
-      obj.is_format_of = val unless val.empty?
-
       val = process_metadata_field('alternative', 'DC-DETAIL-META')
       obj.alternative_title  = val unless val.empty?
 
@@ -354,9 +351,6 @@ module FedoraMigrate
 
       val = process_metadata_field('isReplacedBy', 'DC-DETAIL-META')
       obj.is_replaced_by = val unless val.empty?
-
-      val = process_metadata_field('hasFormat', 'DC-DETAIL-META')
-      obj.has_format = val unless val.empty?
 
       val = process_metadata_field('hasPart', 'DC-DETAIL-META')
       obj.has_part = val unless val.empty?
