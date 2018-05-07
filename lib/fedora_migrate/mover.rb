@@ -3,13 +3,14 @@ module FedoraMigrate
     include MigrationOptions
     include Hooks
 
-    attr_accessor :target, :source, :report
+    attr_accessor :target, :source, :report, :keep_extent
 
     def initialize(*args)
       @source = args[0]
       @target = args[1]
       @options = args[2]
       @report = results_report
+      @keep_extent = args[3]
       post_initialize
     end
 

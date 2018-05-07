@@ -2,7 +2,7 @@ module FedoraMigrate
   class RepositoryMigrator
     include MigrationOptions
 
-    attr_accessor :source_objects, :namespace, :report, :source, :result
+    attr_accessor :source_objects, :namespace, :report, :source, :result, :keep_extent
 
     SingleObjectReport = Struct.new(:status, :object, :relationships)
 
@@ -11,6 +11,15 @@ module FedoraMigrate
       @options = options
       @report = MigrationReport.new(@options[:target_constructor])
       conversion_options
+      # dark_extents_do_not_migrate.txt  tdr_extents_do_not_migrate.txt
+      spec = Gem::Specification.find_by_name("fedora-migrate")
+      gem_root = spec.gem_dir
+
+      if @options[:repo_type] == "dark"
+        @keep_extent = File.readlines("#{gem_root}/dark_extents_do_not_migrate.txt")
+      else
+        @keep_extent = File.readlines("#{gem_root}/tdr_extents_do_not_migrate.txt")
+      end
     end
 
     def migrate_objects
@@ -71,7 +80,7 @@ module FedoraMigrate
 
       def migrate_object
         #byebug
-        result.object = FedoraMigrate::ObjectMover.new(source, nil, options).migrate
+        result.object = FedoraMigrate::ObjectMover.new(source, nil, options, @keep_extent).migrate
         result.status = true
       rescue StandardError => e
         #result.object = e.inspect

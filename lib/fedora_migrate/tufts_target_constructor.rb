@@ -6,14 +6,15 @@ require 'byebug'
 
 module FedoraMigrate
   class TuftsTargetConstructor
-    attr_accessor :source, :candidates, :target
+    attr_accessor :source, :candidates, :target, :keep_extent
     attr_accessor :payload_primary, :payload_secondary, :depositor_utln
 
-    def initialize(source, payload_stream, secondary_payload_stream, depositor)
+    def initialize(source, payload_stream, secondary_payload_stream, depositor, keep_extent)
       @source = source
       @payload_primary = payload_stream
       @payload_secondary = secondary_payload_stream
       @depositor_utln = depositor
+      @keep_extent = keep_extent
       #@logger = Logger.new("#{Rails.root}/log/migration.log")
     end
 
@@ -388,11 +389,9 @@ module FedoraMigrate
       val  = process_metadata_field('type', 'DCA-META')
       obj.resource_type = val unless val.empty?
 
-      #TDLR-728 for details
-      keep_extent = %w(tufts:UA197.002.002.00002 tufts:18776 tufts:18774 tufts:18933 tufts:MS046.006.00003 tufts:MS046.006.00002 tufts:MS046.006.00001)
-
-      if keep_extent.include?(source.pid)
-        val = process_metadata_field('extent', 'DCA-META', false)
+      # do not keep extents in the list
+      unless @keep_extent.include?(source.pid)
+        val = process_metadata_field('extent', 'DCA-META', true)
         obj.extent = val unless val.empty?
       end
 

@@ -239,63 +239,63 @@ namespace :tufts do
   desc "Migrate election records"
   task migrate_elections: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
-    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'elections'})
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'elections', repo_type: 'tdr'})
     puts results
   end
 
   desc "Migrate EADs"
   task migrate_eads: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
-    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'eads'})
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'eads', repo_type: 'tdr'})
     puts results
   end
 
   desc "Migrate Images"
   task migrate_images: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
-    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'images'})
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'images', repo_type: 'tdr'})
     puts results
   end
 
   desc "Migrate TEIs"
   task migrate_teis: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
-    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'teis'})
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'teis', repo_type: 'tdr'})
     puts results
   end
 
   desc "Migrate PDF"
   task migrate_pdfs: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
-    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'pdfs'})
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'pdfs', repo_type: 'tdr'})
     puts results
   end
 
   desc "Migrate Audio"
   task migrate_audio: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
-    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'audio'})
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'audio', repo_type: 'tdr'})
     puts results
   end
 
   desc "Migrate Video"
   task migrate_video: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
-    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'video'})
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'video', repo_type: 'tdr'})
     puts results
   end
 
   desc "Migrate RCR"
   task migrate_rcrs: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
-    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'rcrs'})
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'rcrs', repo_type: 'tdr'})
     puts results
   end
 
   desc "Migrate Generics -- only works on campus"
   task migrate_generics: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
-    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'generics'})
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'generics', repo_type: 'tdr'})
     puts results
   end
 
