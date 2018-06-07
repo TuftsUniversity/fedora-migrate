@@ -231,6 +231,11 @@ namespace :tufts do
     eradicate_records('elections')
   end
 
+  desc "Eradicate objects"
+  task eradicate_objects: :environment do
+    eradicate_records('objects')
+  end
+
   desc "Eradicate generics"
   task eradicate_generics: :environment do
     eradicate_records('generics')
@@ -240,6 +245,13 @@ namespace :tufts do
   task migrate_elections: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
     results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'elections', repo_type: 'tdr'})
+    puts results
+  end
+
+  desc "Migrate objects"
+  task migrate_objects: :environment do
+    # Specifies FedoraMigrate should use the elections target constructor
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'objects', repo_type: 'tdr'})
     puts results
   end
 
