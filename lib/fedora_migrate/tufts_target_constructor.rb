@@ -114,9 +114,18 @@ module FedoraMigrate
     end
 
     def create_and_add_payload(obj, payload_stream, depositor_utln)
+#/byebug
       # create fileset and apply depository metadata
+      #request = Net::HTTP::Get.new uri.request_uri
+      #uri = URI(obj.datastreams[payload_stream])
+      #http.request request do |response|
+      #  File.open '/tmp/blah', 'w' do |io|
+      #    response.read_body do |chunk|
+      #    io.write chunk
+      #  end
+      #@end
 
-      return if source.datastreams[payload_stream].content.nil?
+      return if source.datastreams[payload_stream].size.nil?
       file_set = FileSet.new
       file_set.apply_depositor_metadata depositor_utln
 
@@ -423,17 +432,26 @@ module FedoraMigrate
     private
 
     def get_file_from_source(datastream)
-#byebug
       uri = URI.parse(source.datastreams[datastream].location)
       target_file = File.basename(uri.path)
+      http = Net::HTTP.new(uri.host, uri.port)
 
       voting_record = File.new target_file, 'wb'
-      voting_record.write source.datastreams[datastream].content.body
-      voting_record.flush
-      voting_record.close
-      #byebug
-      File.new target_file
+      http.request_get(uri.path) do |response|
+        case response
+        when Net::HTTPNotFound
+          output "404 - Not Found"
+          return false
+        when Net::HTTPOK
 
+          response.read_body do |chunk|
+            voting_record << chunk
+            voting_record.flush
+          end
+          voting_record.close
+        end
+      end
+      File.new target_file
     end
 
     def get_generic_file_from_source(datastream)
