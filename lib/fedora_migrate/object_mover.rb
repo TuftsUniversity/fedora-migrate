@@ -1,3 +1,4 @@
+require 'byebug'
 module FedoraMigrate
   class ObjectMover < Mover
     RIGHTS_DATASTREAM = "rightsMetadata".freeze
@@ -62,6 +63,7 @@ module FedoraMigrate
       elsif target_value == 'library'
         utln='amay02'
       end
+
       if @options[:target_constructor] == 'elections'
         @target ||= FedoraMigrate::TuftsTargetConstructor.new(source,'RECORD-XML', nil, 'ebeck01', @keep_extent).build
       elsif @options[:target_constructor] == 'eads'
@@ -81,8 +83,28 @@ module FedoraMigrate
       elsif @options[:target_constructor] == 'generics'
         @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'GENERIC-CONTENT', nil, utln, @keep_extent).build
       else
-        puts "** UNKNOWN Target **"
-        exit
+        if (source.profile['objModels'] & ["info:fedora/afmodel:TuftsVotingRecord", "info:fedora/cm:VotingRecord"]).any?
+          @target ||= FedoraMigrate::TuftsTargetConstructor.new(source,'RECORD-XML', nil, 'ebeck01', @keep_extent).build
+        elsif (source.profile['objModels'] & ["info:fedora/cm:Text.EAD", "info:fedora/afmodel:TuftsEAD"]).any?
+          @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.xml', nil, utln, @keep_extent).build
+        elsif (source.profile['objModels'] & ["info:fedora/cm:Image.4DS", "info:fedora/cm:Image.3DS", "info:fedora/afmodel:TuftsImage"]).any?
+          @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.tif', nil, utln, @keep_extent).build
+        elsif (source.profile['objModels'] & ["info:fedora/cm:Text.PDF", "info:fedora/afmodel:TuftsPdf", "info:fedora/cm:Text.FacPub", "info:fedora/afmodel:TuftsFacultyPublication"]).any?
+          @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.pdf', 'Transfer.binary', utln, @keep_extent).build
+        elsif (source.profile['objModels'] & ["info:fedora/afmodel:TuftsTEI", "info:fedora/cm:Text.TEI"]).any?
+          @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.xml', nil, utln, @keep_extent).build
+        elsif (source.profile['objModels'] & ["info:fedora/cm:Audio", "info:fedora/afmodel:TuftsAudio", "info:fedora/cm:Audio.OralHistory", "info:fedora/afmodel:TuftsAudioText"]).any?
+          @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'ARCHIVAL_WAV', 'ARCHIVAL_XML', utln, @keep_extent).build
+        elsif (source.profile['objModels'] & ["info:fedora/afmodel:TuftsVideo"]).any?
+          @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'Archival.video', 'ARCHIVAL_XML', utln, @keep_extent).build
+        elsif (source.profile['objModels'] & ["info:fedora/cm:Text.RCR", "info:fedora/afmodel:TuftsRCR"]).any?
+          @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'RCR-CONTENT', nil, utln, @keep_extent).build
+        elsif (source.profile['objModels'] & ["info:fedora/cm:Object.Generic", "info:fedora/afmodel:TuftsGenericObject"]).any?
+          @target ||= FedoraMigrate::TuftsTargetConstructor.new(source, 'GENERIC-CONTENT', nil, utln, @keep_extent).build
+        else
+          puts "** UNKNOWN Target **"
+          exit
+        end
       end
 
       @target
