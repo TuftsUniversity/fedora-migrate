@@ -49,7 +49,11 @@ module FedoraMigrate
       # set core data
       obj.admin_set = admin_set
       obj.apply_depositor_metadata @depositor_utln
-      obj.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
+      if source.pid.include? "perseus"
+        obj.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE
+      else 
+        obj.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
+      end
       obj.date_uploaded =  DateTime.parse(source.profile['objCreateDate'])
       obj.date_modified = DateTime.current.to_date
 
@@ -141,7 +145,11 @@ module FedoraMigrate
         file_set.label = source.datastreams[payload_stream].label
       end
 
-      file_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
+      if source.pid.include? "perseus"
+        file_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE
+      else 
+        file_set.visibility = Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC
+      end
       work_permissions = obj.permissions.map(&:to_hash)
 
       if payload_stream == "GENERIC-CONTENT"
@@ -153,7 +161,12 @@ module FedoraMigrate
 
       user = ::User.find_by(username: file_set.depositor)
       actor = Hyrax::Actors::FileSetActor.new(file_set, user)
-      actor.create_metadata("visibility" => Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PUBLIC)
+      if source.pid.include? "perseus"
+        actor.create_metadata("visibility" => Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE)
+      else 
+        actor.create_metadata("visibility" => Hydra::AccessControls::AccessRight::VISIBILITY_TEXT_VALUE_PRIVATE)
+      end
+
       actor.create_content(datastream_content)
       actor.attach_to_work(obj)
       actor.file_set.permissions_attributes = work_permissions
@@ -391,11 +404,17 @@ module FedoraMigrate
         unless (known & val).empty?
           val = ["http://sites.tufts.edu/dca/about-us/research-help/reproductions-and-use/"]
         end
-
+        if source.pid.include? 'perseus'
+          val = ["http://rightsstatements.org/page/CNE/1.0/?language=en"]
+        end
         obj.rights_statement = val
       end
 
       val  = process_metadata_field('type', 'DCA-META')
+      # temporary fix for perseus but we should work this out for other types
+      if val.sort == ['image']
+        val = ['Image']
+      end
       obj.resource_type = val unless val.empty?
 
       # do not keep extents in the list

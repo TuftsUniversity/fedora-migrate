@@ -145,10 +145,10 @@ namespace :tufts do
     db = SQLite3::Database.open "#{gem_root}/collections.sqlite3"
     db.execute("CREATE TABLE IF NOT EXISTS collection_map(collection VARCHAR(40) NOT NULL, pid VARCHAR(40) NOT NULL)")
 
-    CSV.foreach("#{gem_root}/TischHighLevelCollections.csv", :headers => true, :header_converters => :symbol, :converters => :all, encoding: "ISO8859-1:utf-8") do |row|
+    CSV.foreach("#{gem_root}/Tisch_F4_Collections.csv", :headers => true, :header_converters => :symbol, :converters => :all, encoding: "ISO8859-1:utf-8") do |row|
       pid = row[0]
       puts "#{pid}"
-      col = Collection.where(title: row[4])
+      col = Collection.where(title: row[1])
       next if col.blank?
       db.execute "REPLACE INTO collection_map VALUES(\"#{col.first.id}\",\"#{pid}\")"
     end
