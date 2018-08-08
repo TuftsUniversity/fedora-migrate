@@ -40,7 +40,7 @@ module FedoraMigrate
       raise FedoraMigrate::Errors::MigrationError, "No qualified targets found in #{source.pid}" if target.nil?
       admin_set = AdminSet.find(AdminSet::DEFAULT_ID)
       # use predictable ids till we get this working
-      if true
+      if false
         obj = target.new(id: convert_id(source.pid))
       else
         obj = target.new
@@ -60,13 +60,13 @@ module FedoraMigrate
       build_filesets obj
       process_metadata obj
 
-      obj.reload
+ #     obj.reload
 
 #      obj.file_sets.each do |file_set|
 #        CreateDerivativesJob.perform_now(file_set, file_set.public_send(:original_file).id) unless file_set.public_send(:original_file).nil?
 #      end
 
-      put_object_into_workflow obj
+    #put_object_into_workflow obj
 
       obj
     end
@@ -75,10 +75,10 @@ module FedoraMigrate
       process_desc_metadata obj
       process_admin_metadata obj
       # process_relsext_metadata obj
-      obj.save
+#      obj.save
 
       process_collection_metadata obj
-      obj.reload
+#      obj.reload
       obj.save
     end
 
@@ -141,8 +141,17 @@ module FedoraMigrate
         file_set.title = [target_file]
         file_set.label = target_file
       else
-        file_set.title = [source.datastreams[payload_stream].label]
-        file_set.label = source.datastreams[payload_stream].label
+        if source.datastreams[payload_stream].label.nil?
+          url = source.datastreams[payload_stream].dsLocation
+          uri = URI.parse(url)
+          file_name = File.basename(uri.path)
+          file_set.title = [file_name]
+          file_set.label = file_name 
+        else 
+          file_set.title = [source.datastreams[payload_stream].label]
+          file_set.label = source.datastreams[payload_stream].label
+        end
+       
       end
 
       if source.pid.include? "perseus"
@@ -171,6 +180,8 @@ module FedoraMigrate
       actor.attach_to_work(obj)
       actor.file_set.permissions_attributes = work_permissions
       file_set.save
+
+      #delete_file_from_source(payload_stream)
     end
 
     def number?(obj)
@@ -271,7 +282,7 @@ module FedoraMigrate
         col_id =  row.join.strip
         col = Collection.find(col_id)
         obj.member_of_collections = [col]
-        obj.save!
+        #obj.save!
       end
 
     end
@@ -384,8 +395,10 @@ module FedoraMigrate
       val = process_metadata_field('rightsHolder', 'DC-DETAIL-META')
       obj.rights_holder = val unless val.empty?
 
-      field = process_metadata_field('accessRights', 'DC-DETAIL-META', false)
-      obj.rights_note = field unless field == ''
+      unless source.pid.include? "slidelib"
+        field = process_metadata_field('accessRights', 'DC-DETAIL-META', false)
+        obj.rights_note = field unless field == ''
+      end
 
       val = process_metadata_field('funder', 'DCA-META')
       additional_funders = process_metadata_field('funder', 'DC-DETAIL-META')
@@ -404,16 +417,21 @@ module FedoraMigrate
         unless (known & val).empty?
           val = ["http://sites.tufts.edu/dca/about-us/research-help/reproductions-and-use/"]
         end
-        if source.pid.include? 'perseus'
+        if ((source.pid.include? 'perseus') || (source.pid.include? "slidelib"))
           val = ["http://rightsstatements.org/page/CNE/1.0/?language=en"]
         end
         obj.rights_statement = val
       end
 
+      if source.pid.include? "slidelib"
+        val = process_metadata_field('rights', 'DCA-META')
+        obj.rights_note = val.first unless val.empty?
+      end
+
       val  = process_metadata_field('type', 'DCA-META')
       # temporary fix for perseus but we should work this out for other types
-      if val.sort == ['image']
-        val = ['Image']
+      if val.sort == ['image'] || val.sort == ['Image']
+        val = ['http://purl.org/dc/dcmitype/Image']
       end
       obj.resource_type = val unless val.empty?
 
@@ -431,7 +449,7 @@ module FedoraMigrate
       if multiple
         target_values = Array.new
         field_values.each do |field|
-          (target_values << field.text) unless field.nil?
+          (target_values << field.text) unless (field.nil? || field.text.blank?)
         end
       else
         unless field_values.empty?
@@ -449,6 +467,13 @@ module FedoraMigrate
     end
 
     private
+
+    def delete_file_from_source(datastream)
+      uri = URI.parse(source.datastreams[datastream].location)
+      target_file = File.basename(uri.path)
+      File.delete(target_file) if File.exists?(target_file)
+    end
+
 
     def get_file_from_source(datastream)
       uri = URI.parse(source.datastreams[datastream].location)
