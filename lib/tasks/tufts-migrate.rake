@@ -75,6 +75,39 @@ namespace :tufts do
       end
   end
 
+  desc "update index"
+  task update_index: :environment do
+    spec = Gem::Specification.find_by_name("fedora-migrate")
+    gem_root = spec.gem_dir
+    row_count = 0
+
+    CSV.foreach("#{gem_root}/voting_record_ids.csv", :headers => true, :header_converters => :symbol, encoding: "ISO8859-1:utf-8") do |row|
+      pid = row[0]
+      a = VotingRecord.find(pid)
+      a.update_index
+    end
+  end
+
+  desc "verify file_set counts"
+  task verify_file_set_counts: :environment do
+    spec = Gem::Specification.find_by_name("fedora-migrate")
+    gem_root = spec.gem_dir
+    row_count = 0
+    file = File.open("/tmp/file_sets.txt", "w")
+
+    CSV.foreach("#{gem_root}/voting_record_ids.csv", :headers => true, :header_converters => :symbol, encoding: "ISO8859-1:utf-8") do |row|
+      pid = row[0]
+  
+
+      file.write "PID: #{pid}\n"
+      a = VotingRecord.find(pid)
+      count = a.file_sets.length
+      file.write "#{pid}, #{count}\n"
+      file.flush
+    end
+    file.close
+  end
+
   desc "define secondary dca collections"
   task define_secondary_dca_collections: :environment do
     spec = Gem::Specification.find_by_name("fedora-migrate")
@@ -178,6 +211,24 @@ namespace :tufts do
     /\A[+-]?\d+(\.[\d]+)?\z/.match(obj)
   end
 
+  def eradicate_records_opaque(type)
+    objs = []
+    pids = File.open("#{type}_to_migrate.txt").read
+    pids.each_line do |pid|
+      begin
+        puts "Get #{pid}"
+        work = ActiveFedora::Base.find(pid.squish)
+        work.delete
+        ActiveFedora::Base.eradicate(pid.squish)
+      rescue ActiveFedora::ObjectNotFoundError
+        # no-op
+      rescue Ldp::Gone
+        puts "#{pid} doesn't exist"
+      end
+    end
+  end
+
+
   def eradicate_records(type)
     objs = []
     pids = File.open("#{type}_to_migrate.txt").read
@@ -194,6 +245,11 @@ namespace :tufts do
         puts "#{pid} doesn't exist"
       end
     end
+  end
+
+  desc "Eradicate pdfs"
+  task eradicate_new_objs: :environment do
+    eradicate_records_opaque('eradicate')
   end
 
   desc "Eradicate pdfs"
@@ -255,6 +311,48 @@ namespace :tufts do
     puts results
   end
 
+  desc "Migrate objects"
+  task migrate_objects2: :environment do
+    # Specifies FedoraMigrate should use the elections target constructor
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'objects2', repo_type: 'tdr'})
+    puts results
+  end
+
+
+  desc "Migrate objects"
+  task migrate_objects3: :environment do
+    # Specifies FedoraMigrate should use the elections target constructor
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'objects3', repo_type: 'tdr'})
+    puts results
+  end
+
+  desc "Migrate objects"
+  task migrate_objects4: :environment do
+    # Specifies FedoraMigrate should use the elections target constructor
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'objects3', repo_type: 'tdr'})
+    puts results
+  end
+
+  desc "Migrate objects"
+  task migrate_objects5: :environment do
+    # Specifies FedoraMigrate should use the elections target constructor
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'objects3', repo_type: 'tdr'})
+    puts results
+  end
+
+  desc "Migrate objects"
+  task migrate_objects6: :environment do
+    # Specifies FedoraMigrate should use the elections target constructor
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'objects3', repo_type: 'tdr'})
+    puts results
+  end
+  
+  desc "Migrate objects"
+  task migrate_objects7: :environment do
+    # Specifies FedoraMigrate should use the elections target constructor
+    results = FedoraMigrate.migrate_repository(namespace: "tufts", options: {target_constructor: 'objects3', repo_type: 'tdr'})
+    puts results
+  end
   desc "Migrate EADs"
   task migrate_eads: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
