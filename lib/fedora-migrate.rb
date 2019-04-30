@@ -50,6 +50,12 @@ module FedoraMigrate
       FedoraMigrate.source.connection.find(id)
     end
 
+    def verify_f3_repository(args)
+      migrator = FedoraMigrate::RepositoryVerifier.new(args[:namespace], args[:options])
+      migrator.verify_f3_objects
+      migrator
+    end
+ 
     def migrate_repository(args)
       migrator = FedoraMigrate::RepositoryMigrator.new(args[:namespace], args[:options])
       migrator.migrate_objects

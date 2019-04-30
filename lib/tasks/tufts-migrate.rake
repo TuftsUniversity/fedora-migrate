@@ -1,3 +1,5 @@
+require 'rake'
+
 desc "Migrate all my objects"
 namespace :tufts do
 
@@ -296,7 +298,6 @@ namespace :tufts do
   task eradicate_generics: :environment do
     eradicate_records('generics')
   end
-
   desc "Migrate election records"
   task migrate_elections: :environment do
     # Specifies FedoraMigrate should use the elections target constructor
@@ -304,6 +305,10 @@ namespace :tufts do
     puts results
   end
 
+  desc "Verify f3 records"
+  task verify_f3_records: :environment do
+    FedoraMigrate.verify_f3_repository(namespace: "draft", options: {target_constructor: 'objects', repo_type: 'tdr'})
+  end
   desc "Migrate objects"
   task migrate_objects: :environment do
     # Specifies FedoraMigrate should use the elections target constructor

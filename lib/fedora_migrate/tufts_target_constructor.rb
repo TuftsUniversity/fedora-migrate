@@ -359,7 +359,7 @@ module FedoraMigrate
       val = process_metadata_field('subject', 'DCA-META')
       obj.subject = val unless val.empty?
 
-      val = process_metadata_field('genre', 'DC-DETAIL-META')
+      val = process_metadata_field('genre', 'DCA-META')
       obj.genre = val unless val.empty?
 
       val = process_metadata_field('spatial', 'DC-DETAIL-META')
